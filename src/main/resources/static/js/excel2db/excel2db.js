@@ -5,10 +5,12 @@
 var input_dom_element = document.getElementById("inputFile");
 var wb,fileType;
 function process_wb(wb) {
-    processBar.setProcess(75)
+    processBar.setProcess(75);
     var ws = wb.Sheets[wb.SheetNames[0]];
-    var html_string = XLSX.utils.sheet_to_html(ws, { id: "data-table", editable: true });
-    document.getElementById("table-content").innerHTML = html_string;
+    document.getElementById("table-content").innerHTML = XLSX.utils.sheet_to_html(ws, {
+        id: "data-table",
+        editable: true
+    });
     $("#table-content").find("tbody").find("tr:gt(1000)").remove();
     processBar.setProcess(100);
     $("#progress-container").hide(2000);
@@ -34,7 +36,7 @@ function handle_fr(e) {
     fileType = f.name.substr(f.name.lastIndexOf('.')+1,f.name.length);
     var reader = new FileReader();
     var rABS = !!reader.readAsBinaryString;
-    processBar.setProcess(25)
+    processBar.setProcess(25);
     reader.onload = function(e) {
         var data = e.target.result;
         if (fileType === 'txt' || fileType === 'csv') {
@@ -122,7 +124,7 @@ function columnSetting(type) {
     var tbl = document.getElementById('data-table');
     var wb1 = XLSX.utils.table_to_book(tbl);
     var columnHeaders = get_columns(wb1,fileType);
-    var reg = new RegExp("[\\u4E00-\\u9FFF]+","g");
+    /*var reg = new RegExp("[\\u4E00-\\u9FFF]+","g");
     var pattern = new RegExp("[`~!@#$^&*()=|{}':;',\\[\\].<>/?~！@#￥……&*（）——|{}【】‘；：”“'。，、？]")
     for (var i = 0; i < columnHeaders.length; i++) {
         if (reg.test(columnHeaders[i])) {
@@ -132,7 +134,7 @@ function columnSetting(type) {
             toastr.warning("列名不能包含特殊字符!");
             return false;
         }
-    }
+    }*/
     var html = '';
     for (var i = 0; i < columnHeaders.length;i++) {
         html += '<div class="form-group">';
@@ -146,7 +148,6 @@ function columnSetting(type) {
             html +=             '<option value="FLOAT">FLOAT</option>';
             html +=             '<option value="DOUBLE">DOUBLE</option>';
             html +=             '<option value="DATE">DATE</option>';
-            html +=             '<option value="TIME">TIME</option>';
             html +=             '<option value="TIMESTAMP">TIMESTAMP</option>';
             html +=         '</select>';
         } else if (type === "oracle") {

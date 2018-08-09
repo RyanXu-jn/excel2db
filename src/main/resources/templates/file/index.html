@@ -449,7 +449,8 @@
             data:{
                 "tableName":tableName,
                 "columns":columns,
-                "data":JSON.stringify(columnData.slice(fromIndex,toIndex))
+                "data":JSON.stringify(columnData.slice(fromIndex,toIndex)),
+                "columnTypes":JSON.stringify(createTableDO())
             },
             success:function (data) {
                 if (data.meta.success) {
