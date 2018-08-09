@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.sql.*;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -94,22 +95,22 @@ public class Excel2DBController {
     @ResponseBody
     public JsonMessage createNewTable(String tableName,String data) throws ClassNotFoundException,SQLException{
         List<Map<String,String>> DO = JSON.parseObject(data,new TypeReference<List<Map<String,String>>>(){});
-        StringBuffer stringBuffer = new StringBuffer();
-        stringBuffer.append("create table " + tableName + " (");
+        StringBuilder stringBuffer = new StringBuilder();
+        stringBuffer.append("create table ").append(tableName).append(" (");
         Map<String,String> tempMap = null;
         for (int i = 0; i < DO.size(); i++) {
             tempMap = DO.get(i);
-            stringBuffer.append(tempMap.get("name") + " " + tempMap.get("type"));
+            stringBuffer.append(tempMap.get("name")).append(" ").append(tempMap.get("type"));
             if ("VARCHAR".equals(tempMap.get("type")) || "VARCHAR2".equals(tempMap.get("type")) || "CHAR".equals(tempMap.get("type")) ){
                 if (StringUtils.isNotBlank(tempMap.get("length"))) {
-                    stringBuffer.append("(" + tempMap.get("length") + ")");
+                    stringBuffer.append("(").append(tempMap.get("length")).append(")");
                 }
             }
             if (i != DO.size() - 1) {
                 stringBuffer.append(",");
             }
         }
-        stringBuffer.append(")");
+        stringBuffer.append(")ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         excel2DBService.createNewTable(stringBuffer.toString());
         return new JsonMessage().success();
     }
@@ -125,8 +126,9 @@ public class Excel2DBController {
      */
     @RequestMapping(value = "saveData",produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseBody
-    public JsonMessage saveData(String tableName,String columns,String data) throws ClassNotFoundException,SQLException{
+    public JsonMessage saveData(String tableName,String columns,String data,String columnTypes) throws ClassNotFoundException, SQLException, ParseException {
         List<List<String>> dataList = JSON.parseObject(data, new TypeReference< List<List<String>>>() {});
+        List<Map<String,String>> columnTypeList = JSON.parseObject(columnTypes, new TypeReference<List<Map<String,String>>>() {});
         String[] columnsArr = columns.split(",");
         if (columnsArr.length != dataList.get(0).size()) {
             return new JsonMessage().failure("列数不匹配！");
@@ -134,14 +136,14 @@ public class Excel2DBController {
         //50条数据进行一次提交
         int num = 50;
         if (dataList.size() <= num) {
-            excel2DBService.saveDataIns(tableName,columns,dataList);
+            excel2DBService.saveDataIns(tableName,columns,dataList,columnTypeList);
         } else {
             int fromIndex = 0,toIndex = num;
             while(true) {
                 if (toIndex > dataList.size()) {
                     toIndex = dataList.size();
                 }
-                excel2DBService.saveDataIns(tableName,columns,dataList.subList(fromIndex,toIndex));
+                excel2DBService.saveDataIns(tableName,columns,dataList.subList(fromIndex,toIndex),columnTypeList);
                 if (toIndex == dataList.size()) {
                     break;
                 }

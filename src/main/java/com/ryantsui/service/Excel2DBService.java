@@ -1,14 +1,20 @@
 package com.ryantsui.service;
 
 import com.ryantsui.config.DBConfig;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Created by xufy on 2018/5/19.
@@ -16,6 +22,13 @@ import java.util.Locale;
 @Service
 public class Excel2DBService {
     private static final Logger logger = LoggerFactory.getLogger(Excel2DBService.class);
+    private String[] pattern = new String[]{"yyyy-MM", "yyyyMM", "yyyy/MM",
+            "yyyyMMdd", "yyyy-MM-dd", "yyyy/MM/dd",
+            "yyyyMMddHHmmss",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy/MM/dd HH:mm:ss"};
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    private SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private Connection connection = null;
 
     /**
@@ -90,21 +103,39 @@ public class Excel2DBService {
      * @throws ClassNotFoundException 异常
      * @throws SQLException 异常
      */
-    public void saveDataIns(String tableName,String columns,List<List<String>> dataList)
-            throws ClassNotFoundException,SQLException{
+    public void saveDataIns(String tableName,String columns,List<List<String>> dataList,List<Map<String,String>> columnTypeList)
+            throws ClassNotFoundException, SQLException, ParseException {
         try {
             connection = this.getConnection();
             connection.setAutoCommit(false);
             Statement statement = connection.createStatement();
             StringBuffer stringBuffer;
             List<String> subList = null;
-            for (int i = 0; i < dataList.size(); i++) {
-                subList = dataList.get(i);
+            String columnType = null;
+            for (List<String> aDataList : dataList) {
+                subList = aDataList;
                 stringBuffer = new StringBuffer();
                 stringBuffer.append("insert into ").append(tableName).append(" (").append(columns).append(") ");
                 stringBuffer.append("values (");
+                Date date;
                 for (int j = 0; j < subList.size(); j++) {
-                    stringBuffer.append("'" + subList.get(j) + "'");
+                    columnType = columnTypeList.get(j).get("type");
+                    if ("INT".equals(columnType) || "FLOAT".equals(columnType) || "DOUBLE".equals(columnType)
+                            || "NUMBER".equals(columnType) || "LONG".equals(columnType)) {
+                        if (StringUtils.isNotBlank(subList.get(j))) {
+                            stringBuffer.append(subList.get(j));
+                        } else {
+                            stringBuffer.append(0);
+                        }
+                    } else if ("DATE".equals(columnType)) {
+                        date = DateUtils.parseDate(subList.get(j),pattern);
+                        stringBuffer.append("'").append(dateFormat.format(date)).append("'");
+                    } else if ("TIMESTAMP".equals(columnType)) {
+                        date = DateUtils.parseDate(subList.get(j),pattern);
+                        stringBuffer.append("'").append(timestampFormat.format(date)).append("'");
+                    } else {
+                        stringBuffer.append("'").append(subList.get(j)).append("'");
+                    }
                     if (j != subList.size() - 1) {
                         stringBuffer.append(",");
                     }
@@ -116,8 +147,8 @@ public class Excel2DBService {
             connection.commit();
             connection.setAutoCommit(true);
             this.closeConnection();
-        } catch (SQLException e) {
-            logger.error("SQL异常");
+        } catch (SQLException | ParseException e) {
+            logger.error("SQL异常",e);
             throw e;
         }
     }
