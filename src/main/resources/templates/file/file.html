@@ -1,8 +1,8 @@
 <!DOCTYPE HTML >
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:include="include/css :: common">
+<head>
 </head>
-<body style="width: 100%;height: 100%;">
+<body style="width: 100%;height: 100%;" th:fragment="file-content">
 <div class="container-fluid">
     <div class="row">
         <div class="col-lg-12">
@@ -358,7 +358,7 @@
         if ($("#columns-check-all").is(":checked")) {
             $("input[name='columnName']").each(function(index,dom){
                 $(this).prop("checked",true);
-                if (index === 0) {
+                if (file === 0) {
                     obj.html($(this).val());
                 } else {
                     obj.append("," + $(this).val());

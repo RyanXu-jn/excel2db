@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+</head>
+<body th:fragment="url-content">
+<div class="container-fluid">
+    <div class="row" id="rowContent">
+        <div class="col-md-1"></div>
+        <div class="col-md-10">
+            <form class="form-horizontal" style="margin-top: 20px;">
+                <div class="form-group">
+                    <label for="urlAddress" class="col-sm-2 control-label">URL数据源：</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="urlAddress" >
+                    </div>
+                    <div class="col-sm-2">
+                        <button type="button" class="btn btn-primary" id="btn-preview">预览</button>
+                        <button type="button" class="btn btn-primary" id="btn-save">保存</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">请求方式：</label>
+                    <div class="col-sm-10">
+                        <label class="radio-inline">
+                            <input type="radio" name="requestType" value="POST"> POST
+                        </label>
+                        <label class="radio-inline">
+                            <input type="radio" name="requestType" value="GET" checked> GET
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group" style="height:29px;">
+                    <label class="col-sm-2 control-label">请求属性：</label>
+                    <div class="col-sm-10">
+                        <div style="float: left;">
+                            <label class="radio-inline">
+                                <input type="radio" name="requestProperty" checked value="x-www-form-urlencoded"> x-www-form-urlencoded
+                            </label>
+                            <label class="radio-inline">
+                                <input type="radio" name="requestProperty" value="raw"> raw
+                            </label>
+                        </div>
+                        <select class="form-control" id="requestRawType" style="width:180px;float: left;height: 24px;padding:0 0;margin-top: 5px;margin-left: 5px;display: none;">
+                            <option value="text/plain">Text(text/plain)</option>
+                            <option value="application/json" selected>JSON(application/json)</option>
+                            <option value="application/xml">XML(application/xml)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">查询参数：</label>
+                    <div class="col-sm-10">
+                        <div id="formProperty">
+                            <button type="button" class="btn btn-info" data-toggle="modal" id="btn-addProperty">添加参数</button>
+                            <table class="table table-bordered" style="margin-bottom: 0" id="propertyTable">
+                                <thead>
+                                <tr style="background: #f4f4f4;height: 30px;">
+                                    <td style="vertical-align: middle">参数名称</td>
+                                    <td style="vertical-align: middle">参数值</td>
+                                    <td style="vertical-align: middle;width: 80px;">操作</td>
+                                </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <div id="rawProperty" style="display: none;">
+                            <textarea class="form-control" rows="5" id="rawPropertyData"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">响应结果：</label>
+                    <div class="col-sm-10">
+                        <textarea class="form-control" rows="10" id="responseResult" readonly="readonly"></textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-1"></div>
+    </div>
+</div>
+<div class="modal fade" id="propertyModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                    ×
+                </button>
+                <h4 class="modal-title">
+                    请求参数
+                </h4>
+            </div>
+            <div class="modal-body">
+                <div class="row" style="margin-bottom: 10px;margin-right:6px;">
+                    <div class="col-md-3" style="padding: 0 10px 0 0px;text-align:right;margin-top:5px">参数名称：</div>
+                    <div class="col-md-9" style="padding: 0 10px 0 0px">
+                        <input type="text" class="form-control" id="propertyKey"></div>
+                </div>
+                <div class="row" style="margin-bottom: 10px;margin-right:6px;">
+                    <div class="col-md-3" style="padding: 0 10px 0 0px;text-align:right;margin-top:5px">参数值：</div>
+                    <div class="col-md-9" style="padding: 0 10px 0 0px">
+                        <input type="text" class="form-control" id="propertyValue">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="addProperty">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
+<script type="text/javascript">
+    /*$(function () {
+        $.ajax({
+            type: "POST",
+            url: "data/getDataUrl",
+            dataType: "json",
+            data: {
+                data:JSON.stringify({
+                    "instanceid":instanceId,
+                    "instancename":instanceName
+                })
+            },
+            success: function (data) {
+                if(data.meta.success){
+                    if(data.data.length > 0) {
+                        //解析方法
+                        var urlData = data.data[0];
+                        $("#urlAddress").val(urlData.REQUEST_URL);
+                        $("input[name='requestType'][value='" + urlData.REQUEST_TYPE + "']").attr("checked",true);
+                        if ("x-www-form-urlencoded" === urlData.REQUEST_PROPERTY) {
+                            $("input[name='requestProperty'][value='x-www-form-urlencoded']").attr("checked",true);
+                            var trArr = urlData.REQUEST_DATA.split("&");
+                            var col;
+                            for (var i = 0; i < trArr.length; i++) {
+                                col = trArr[i].split("=");
+                                //值可能为空
+                                if (col.length !== 2) {
+                                    tableAddTr(col[0],"");
+                                } else {
+                                    tableAddTr(col[0],col[1]);
+                                }
+                            }
+                        } else {
+                            $("input[name='requestProperty'][value='raw']").attr("checked",true).trigger("click");
+                            $("#requestRawType").val(urlData.REQUEST_PROPERTY);
+                            $("#rawPropertyData").val(urlData.REQUEST_DATA);
+                        }
+                    }
+                }else{
+                }
+            }
+        });
+    });*/
+    $("input[name='requestProperty']").on("click",function(e){
+        var value = $(this).val();
+        if ("raw" === value) {
+            $("#requestRawType").show();
+            $("#formProperty").hide();
+            $("#rawProperty").show();
+        } else {
+            $("#requestRawType").hide();
+            $("#formProperty").show();
+            $("#rawProperty").hide();
+        }
+    });
+    var index = 0,currEdit = -1;
+    $("#btn-addProperty").on("click",function(e){
+        $("#propertyKey").val('');
+        $("#propertyValue").val('');
+        $('#propertyModal').modal('show');
+    });
+    $("#addProperty").on("click",function (e) {
+        var key = $("#propertyKey").val();
+        var value = $("#propertyValue").val();
+        tableAddTr(key,value);
+        $('#propertyModal').modal('hide');
+    });
+    function tableAddTr(key,value) {
+        if (0 < currEdit) {
+            var tr = $("#propertyTable").find("tbody").find("tr[index='" + currEdit + "']");
+            tr.find("td:eq(0)").html(key);
+            tr.find("td:eq(1)").html(value);
+            currEdit = -1;
+        } else {
+            index ++;
+            if ($.trim(key)) {
+                var html = '';
+                html += '<tr style="height: 35px;" index="' + index + '">';
+                html += '<td style="vertical-align: middle">' + key + '</td>';
+                html += '<td style="vertical-align: middle">' + value + '</td>';
+                html += '<td style="vertical-align: middle"><span>';
+                html += '<a href="javascript:delProperty(' + index + ')"><i class="glyphicon glyphicon-trash" title="删除参数" style="font-size: 12pt;color: #d30a16;"></i></a>';
+                html += '</span><span>';
+                html += '<a href="javascript:updateProperty(' + index + ')"><i class="glyphicon glyphicon-edit" title="修改参数" style="font-size: 12pt;color: #005fd3;margin-left: 10px"></i></a>';
+                html += '</span></td>';
+                html += '</tr>';
+                $("#propertyTable").find("tbody").append(html);
+            }
+        }
+    }
+    function delProperty(index) {
+        $("#propertyTable").find("tbody").find("tr[index='" + index + "']").remove();
+    }
+    function updateProperty(index) {
+        currEdit = index;
+        var tr = $("#propertyTable").find("tbody").find("tr[index='" + index + "']");
+        var key = $.trim(tr.find("td:eq(0)").html());
+        $("#propertyKey").val(key);
+        var value = $.trim(tr.find("td:eq(1)").html());
+        $("#propertyValue").val(value);
+        $('#propertyModal').modal('show');
+    }
+    $("#btn-preview").on("click",function(e){
+        processRequest("preview");
+    });
+    $("#btn-save").on("click",function(){
+        processRequest("save");
+    });
+    function processRequest(flag) {
+        var url = $("#urlAddress").val();
+        if (!$.trim(url)) {
+            toastr.warning("URL不能为空！");
+            return;
+        }
+        var requestType = $("input[name='requestType']:checked").val();
+        var requestProperty = $("input[name='requestProperty']:checked").val();
+        var requestData = "";
+        if ("raw" === requestProperty) {
+            requestProperty = $("#requestRawType").val();
+            requestData = $("#rawPropertyData").val();
+        } else {
+            var trObj = $("#propertyTable").find("tbody").find("tr");
+            if (trObj.length > 0) {
+                trObj.each(function(index,ele){
+                    requestData += $.trim($(this).find("td:eq(0)").html()) + "=" + encodeURI($.trim($(this).find("td:eq(1)").html()));
+                    if (index !== trObj.length - 1) {
+                        requestData += "&";
+                    }
+                });
+            }
+        }
+        if (flag === "preview") {
+            $("#responseResult").val("正在请求数据，请稍后。。。");
+            $.ajax({
+                type:"POST",
+                url:"url/previewDataUrl",
+                dataType: "json",
+                data:{
+                    data:JSON.stringify({
+                        "requestUrl":url,
+                        "requestType":requestType,
+                        "requestProperty":requestProperty,
+                        "requestData":requestData
+                    })
+                },
+                success: function (data) {
+                    if (data.meta.success) {
+                        $("#responseResult").val(JSON.stringify(data.data));
+                    } else {
+                        toastr.warning(data.meta.message);
+                    }
+                }
+            });
+        } else {
+            $.ajax({
+                type:"POST",
+                url:"url/saveDataUrl",
+                dataType: "json",
+                data:{
+                    data:JSON.stringify({
+                        "requestUrl":url,
+                        "requestType":requestType,
+                        "requestProperty":requestProperty,
+                        "requestData":requestData
+                    })
+                },
+                success: function (data) {
+                    if(data.meta.success){
+                        toastr.success("保存成功!");
+                    }else{
+                        toastr.warning(data.meta.message);
+                    }
+                }
+            });
+        }
+    }
+</script>

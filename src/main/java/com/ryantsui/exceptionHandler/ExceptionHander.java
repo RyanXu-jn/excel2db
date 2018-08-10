@@ -1,4 +1,4 @@
-package com.ryantsui.controller;
+package com.ryantsui.exceptionHandler;
 
 import com.ryantsui.entity.JsonMessage;
 import org.springframework.web.bind.annotation.ControllerAdvice;
