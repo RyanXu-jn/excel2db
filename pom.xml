@@ -21,7 +21,7 @@
 	<properties>
         <mysql.version>5.1.38</mysql.version>
         <oracle.version>10.2.0.4.0</oracle.version>
-        <fastjson.version>1.2.15</fastjson.version>
+        <fastjson.version>1.2.31</fastjson.version>
         <common-lang3.version>3.7</common-lang3.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
