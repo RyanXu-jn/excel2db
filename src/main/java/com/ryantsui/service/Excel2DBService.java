@@ -108,15 +108,24 @@ public class Excel2DBService {
         try {
             connection = this.getConnection();
             connection.setAutoCommit(false);
-            Statement statement = connection.createStatement();
-            StringBuffer stringBuffer;
             List<String> subList = null;
             String columnType = null;
+            StringBuilder stringBuffer = new StringBuilder();
+            String driverName = (String)DBConfig.getInstance().get("driver");
+            if (driverName.contains("oracle")) {
+                stringBuffer.append("insert all ");
+            } else {
+                stringBuffer.append("insert into ").append(tableName).append(" (").append(columns).append(") ");
+                stringBuffer.append("values ");
+            }
             for (List<String> aDataList : dataList) {
                 subList = aDataList;
-                stringBuffer = new StringBuffer();
-                stringBuffer.append("insert into ").append(tableName).append(" (").append(columns).append(") ");
-                stringBuffer.append("values (");
+                if (driverName.contains("oracle")) {
+                    stringBuffer.append(" into ").append(tableName).append(" (").append(columns).append(") ")
+                        .append("values (");
+                } else {
+                    stringBuffer.append("(");
+                }
                 Date date;
                 for (int j = 0; j < subList.size(); j++) {
                     columnType = columnTypeList.get(j).get("type");
@@ -141,9 +150,12 @@ public class Excel2DBService {
                     }
                 }
                 stringBuffer.append(" )");
-                statement.addBatch(stringBuffer.toString());
             }
-            statement.executeBatch();
+            if (driverName.contains("oracle")){
+                stringBuffer.append(" SELECT 1 FROM DUAL");
+            }
+            PreparedStatement preparedStatement = connection.prepareStatement(stringBuffer.toString());
+            preparedStatement.execute();
             connection.commit();
             connection.setAutoCommit(true);
             this.closeConnection();

@@ -110,7 +110,10 @@ public class Excel2DBController {
                 stringBuffer.append(",");
             }
         }
-        stringBuffer.append(")ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        stringBuffer.append(")");
+        if (((String)DBConfig.getInstance().get("driver")).contains("mysql")) {
+            stringBuffer.append(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        }
         excel2DBService.createNewTable(stringBuffer.toString());
         return new JsonMessage().success();
     }
