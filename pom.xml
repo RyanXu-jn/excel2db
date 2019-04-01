@@ -20,7 +20,7 @@
 
 	<properties>
         <mysql.version>5.1.38</mysql.version>
-        <oracle.version>10.2.0.4.0</oracle.version>
+        <oracle.version>11.2.0.3</oracle.version>
         <fastjson.version>1.2.31</fastjson.version>
         <common-lang3.version>3.7</common-lang3.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -44,7 +44,7 @@
         </dependency>
         <dependency>
             <groupId>com.oracle</groupId>
-            <artifactId>ojdbc14</artifactId>
+            <artifactId>ojdbc6</artifactId>
             <version>${oracle.version}</version>
         </dependency>
         <dependency>
