@@ -29,15 +29,15 @@ public class URLController {
      */
     @RequestMapping(value="/previewDataUrl",method = RequestMethod.POST,produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseBody
-    public JsonMessage prepreviewDataUrl(String data) throws Exception {
+    public String prepreviewDataUrl(String data) throws Exception {
         Map<String,String> param = objectMapper.readValue(data, new TypeReference<Map<String, String>>() {});
         if(null == param){
-            return new JsonMessage().failure("参数为空");
+            throw new Exception("参数为空");
         }
         String result = HttpClient.previewDataByUrl(param.get("requestUrl"),param.get("requestType"),
                 param.get("requestProperty"),param.get("requestData"));
         Map<String, Object> object = objectMapper.readValue(result, new TypeReference<Map<String, Object>>(){});
-        return new JsonMessage().success(object);
+        return objectMapper.writeValueAsString(object);
     }
 
     /**

@@ -15,7 +15,7 @@
         </ul>
     </div>
     <div class="layui-body">
-        <iframe src="${ctxPath}/file/file" allowtransparency="true" frameborder="0" height="100%" width="100%" ></iframe>
+        <iframe src="${ctxPath}/file/file" id="frameContent" allowtransparency="true" frameborder="0" height="100%" width="100%" ></iframe>
     </div>
     <div class="layui-footer">
         © Ryan Xu
@@ -26,9 +26,16 @@
 <script type="text/javascript">
     layui.use('element', function(){
         var element = layui.element;
-
+        var $ = layui.jquery;
         element.on('nav(filter)', function(data){
-            console.log(data);
+            //console.log(this); //当前Tab标题所在的原始DOM元素
+            //console.log(data.index); //得到当前Tab的所在下标
+            //console.log(data.elem); //得到当前的Tab大容器
+            if ("读URL" === $(this).html()) {
+                $("#frameContent").attr("src", ctxPath + "/url/url");
+            } else if ("读文件" === $(this).html()) {
+                $("#frameContent").attr("src", ctxPath + "/file/file");
+            }
         });
     });
 </script>

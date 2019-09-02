@@ -1,111 +1,84 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html>
 <head>
+    <%
+    layout("../include/css.html",{title: "Excel2DB"}){}
+    %>
+    <style type="text/css">
+        #rowContent .layui-form-label {
+            width: 120px;
+        }
+    </style>
 </head>
-<body th:fragment="url-content">
-<div class="container-fluid">
-    <div class="row" id="rowContent">
-        <div class="col-md-1"></div>
-        <div class="col-md-10">
-            <form class="form-horizontal" style="margin-top: 20px;">
-                <div class="form-group">
-                    <label for="urlAddress" class="col-sm-2 control-label">URL数据源：</label>
-                    <div class="col-sm-8">
-                        <input type="text" class="form-control" id="urlAddress" >
+<body class="layui-layout-body">
+<div class="layui-fluid">
+    <div class="layui-row" id="rowContent">
+        <div class="layui-col-md7 layui-col-md-offset3">
+            <form class="layui-form" style="margin-top: 20px;" lay-filter="requestForm">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">URL数据源：</label>
+                    <div class="layui-input-inline" style="width: 400px">
+                        <input type="text" class="layui-input" id="urlAddress" lay-verify="required">
                     </div>
-                    <div class="col-sm-2">
-                        <button type="button" class="btn btn-primary" id="btn-preview">预览</button>
-                        <button type="button" class="btn btn-primary" id="btn-save">保存</button>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="col-sm-2 control-label">请求方式：</label>
-                    <div class="col-sm-10">
-                        <label class="radio-inline">
-                            <input type="radio" name="requestType" value="POST"> POST
-                        </label>
-                        <label class="radio-inline">
-                            <input type="radio" name="requestType" value="GET" checked> GET
-                        </label>
+                    <div class="layui-input-inline">
+                        <button type="button" class="layui-btn layui-btn-radius layui-btn-normal" id="btn-preview">预览</button>
+                        <!--<button type="button" class="btn btn-primary" id="btn-save">保存</button>-->
                     </div>
                 </div>
-                <div class="form-group" style="height:29px;">
-                    <label class="col-sm-2 control-label">请求属性：</label>
-                    <div class="col-sm-10">
-                        <div style="float: left;">
-                            <label class="radio-inline">
-                                <input type="radio" name="requestProperty" checked value="x-www-form-urlencoded"> x-www-form-urlencoded
-                            </label>
-                            <label class="radio-inline">
-                                <input type="radio" name="requestProperty" value="raw"> raw
-                            </label>
-                        </div>
-                        <select class="form-control" id="requestRawType" style="width:180px;float: left;height: 24px;padding:0 0;margin-top: 5px;margin-left: 5px;display: none;">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">请求方式：</label>
+                    <div class="layui-input-block">
+                        <input type="radio" lay-filter="requestType" name="requestType" value="POST" title="POST">
+                        <input type="radio" lay-filter="requestType" name="requestType" value="GET" title="GET" checked>
+                    </div>
+                </div>
+                <div class="layui-form-item" style="height:29px;display: none;" id="requestProperty">
+                    <label class="layui-form-label">请求属性：</label>
+                    <div class="layui-input-inline" style="width: 300px;">
+                        <input type="radio" lay-filter="requestProperty" name="requestProperty" value="x-www-form-urlencoded" checked title="x-www-form-urlencoded">
+                        <input type="radio" lay-filter="requestProperty" name="requestProperty" value="raw" title="raw">
+                    </div>
+                    <div class="layui-input-inline" id="requestRawType" style="display: none;">
+                        <select>
                             <option value="text/plain">Text(text/plain)</option>
                             <option value="application/json" selected>JSON(application/json)</option>
                             <option value="application/xml">XML(application/xml)</option>
                         </select>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="col-sm-2 control-label">查询参数：</label>
-                    <div class="col-sm-10">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">查询参数：</label>
+                    <div class="layui-input-block">
                         <div id="formProperty">
-                            <button type="button" class="btn btn-info" data-toggle="modal" id="btn-addProperty">添加参数</button>
-                            <table class="table table-bordered" style="margin-bottom: 0" id="propertyTable">
+                            <button type="button" class="layui-btn layui-btn-radius layui-btn-warm" id="btn-addProperty">添加参数</button>
+                            <table class="layui-table" lay-even lay-skin="nob" id="propertyTable">
+                                <colgroup>
+                                    <col width="150">
+                                    <col width="150">
+                                    <col>
+                                </colgroup>
                                 <thead>
-                                <tr style="background: #f4f4f4;height: 30px;">
-                                    <td style="vertical-align: middle">参数名称</td>
-                                    <td style="vertical-align: middle">参数值</td>
-                                    <td style="vertical-align: middle;width: 80px;">操作</td>
-                                </tr>
+                                    <tr>
+                                        <td style="vertical-align: middle">参数名称</td>
+                                        <td style="vertical-align: middle">参数值</td>
+                                        <td style="vertical-align: middle;">操作</td>
+                                    </tr>
                                 </thead>
                                 <tbody></tbody>
                             </table>
                         </div>
                         <div id="rawProperty" style="display: none;">
-                            <textarea class="form-control" rows="5" id="rawPropertyData"></textarea>
+                            <textarea class="layui-textarea" id="rawPropertyData"></textarea>
                         </div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="col-sm-2 control-label">响应结果：</label>
-                    <div class="col-sm-10">
-                        <textarea class="form-control" rows="10" id="responseResult" readonly="readonly"></textarea>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">响应结果：</label>
+                    <div class="layui-input-block">
+                        <textarea class="layui-textarea" id="responseResult" readonly="readonly"></textarea>
                     </div>
                 </div>
             </form>
-        </div>
-        <div class="col-md-1"></div>
-    </div>
-</div>
-<div class="modal fade" id="propertyModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
-                    ×
-                </button>
-                <h4 class="modal-title">
-                    请求参数
-                </h4>
-            </div>
-            <div class="modal-body">
-                <div class="row" style="margin-bottom: 10px;margin-right:6px;">
-                    <div class="col-md-3" style="padding: 0 10px 0 0px;text-align:right;margin-top:5px">参数名称：</div>
-                    <div class="col-md-9" style="padding: 0 10px 0 0px">
-                        <input type="text" class="form-control" id="propertyKey"></div>
-                </div>
-                <div class="row" style="margin-bottom: 10px;margin-right:6px;">
-                    <div class="col-md-3" style="padding: 0 10px 0 0px;text-align:right;margin-top:5px">参数值：</div>
-                    <div class="col-md-9" style="padding: 0 10px 0 0px">
-                        <input type="text" class="form-control" id="propertyValue">
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" id="addProperty">确定</button>
-            </div>
         </div>
     </div>
 </div>
@@ -113,6 +86,35 @@
 </html>
 
 <script type="text/javascript">
+    var layform, layElement;
+    layui.use(['form', 'element'], function () {
+        layform = layui.form;
+        const $ = layui.jquery;
+        layElement = layui.element;
+        layform.render("", "requestForm");
+        layform.on('radio(requestType)', function (data) {
+            var value = data.value;
+            if ("POST" === value) {
+                $("#requestProperty").show();
+            } else {
+                $("#requestProperty").hide();
+            }
+        });
+        layform.on('radio(requestProperty)', function(data){
+            //console.log(data.elem); //得到radio原始DOM对象
+            //console.log(data.value); //被点击的radio的value值
+            var value = data.value;
+            if ("raw" === value) {
+                $("#requestRawType").show();
+                $("#formProperty").hide();
+                $("#rawProperty").show();
+            } else {
+                $("#requestRawType").hide();
+                $("#formProperty").show();
+                $("#rawProperty").hide();
+            }
+        });
+    });
     /*$(function () {
         $.ajax({
             type: "POST",
@@ -155,30 +157,47 @@
             }
         });
     });*/
-    $("input[name='requestProperty']").on("click",function(e){
-        var value = $(this).val();
-        if ("raw" === value) {
-            $("#requestRawType").show();
-            $("#formProperty").hide();
-            $("#rawProperty").show();
-        } else {
-            $("#requestRawType").hide();
-            $("#formProperty").show();
-            $("#rawProperty").hide();
-        }
-    });
     var index = 0,currEdit = -1;
     $("#btn-addProperty").on("click",function(e){
+        openModal();
         $("#propertyKey").val('');
         $("#propertyValue").val('');
-        $('#propertyModal').modal('show');
     });
-    $("#addProperty").on("click",function (e) {
-        var key = $("#propertyKey").val();
-        var value = $("#propertyValue").val();
-        tableAddTr(key,value);
-        $('#propertyModal').modal('hide');
-    });
+    function openModal() {
+        layer.open({
+            type: 1,
+            title: false,
+            closeBtn: 1,
+            area:['515px','220px'],
+            shadeClose: false,//true点击遮罩层关闭弹框
+            content: '<form class="layui-form" action="" lay-filter="modalForm" style="padding:30px 15px;">\n' +
+                '    <div class="layui-form-item">\n' +
+                '        <label class="layui-form-label">参数名称：</label>\n' +
+                '        <div class="layui-input-block">\n' +
+                '            <input type="text" id="propertyKey" name="title" required  lay-verify="required" placeholder="请输入参数名称" autocomplete="off" class="layui-input">\n' +
+                '        </div>\n' +
+                '    </div>\n' +
+                '    <div class="layui-form-item">\n' +
+                '        <label class="layui-form-label">参数值：</label>\n' +
+                '        <div class="layui-input-block">\n' +
+                '            <input type="text" id="propertyValue" name="title" required  lay-verify="required" placeholder="请输入参数值" autocomplete="off" class="layui-input">\n' +
+                '        </div>\n' +
+                '    </div>\n' +
+                '    <div class="layui-form-item">\n' +
+                '        <div class="layui-input-block">\n' +
+                '            <button type="button"  id="addProperty" class="layui-btn">立即提交</button>\n' +
+                '        </div>\n' +
+                '    </div>\n' +
+                '</form>'
+        });
+        $("#addProperty").on("click",function (e) {
+            var key = $("#propertyKey").val();
+            var value = $("#propertyValue").val();
+            tableAddTr(key,value);
+            layer.closeAll();
+        });
+        layform.render("", "modalForm");
+    }
     function tableAddTr(key,value) {
         if (0 < currEdit) {
             var tr = $("#propertyTable").find("tbody").find("tr[index='" + currEdit + "']");
@@ -192,11 +211,10 @@
                 html += '<tr style="height: 35px;" index="' + index + '">';
                 html += '<td style="vertical-align: middle">' + key + '</td>';
                 html += '<td style="vertical-align: middle">' + value + '</td>';
-                html += '<td style="vertical-align: middle"><span>';
-                html += '<a href="javascript:delProperty(' + index + ')"><i class="glyphicon glyphicon-trash" title="删除参数" style="font-size: 12pt;color: #d30a16;"></i></a>';
-                html += '</span><span>';
-                html += '<a href="javascript:updateProperty(' + index + ')"><i class="glyphicon glyphicon-edit" title="修改参数" style="font-size: 12pt;color: #005fd3;margin-left: 10px"></i></a>';
-                html += '</span></td>';
+                html += '<td style="vertical-align: middle">';
+                html += '<a href="javascript:delProperty(' + index + ')" class="layui-btn layui-btn-sm">删除参数</a>';
+                html += '<a href="javascript:updateProperty(' + index + ')" class="layui-btn layui-btn-sm">修改参数</a>';
+                html += '</td>';
                 html += '</tr>';
                 $("#propertyTable").find("tbody").append(html);
             }
@@ -208,11 +226,11 @@
     function updateProperty(index) {
         currEdit = index;
         var tr = $("#propertyTable").find("tbody").find("tr[index='" + index + "']");
+        openModal();
         var key = $.trim(tr.find("td:eq(0)").html());
         $("#propertyKey").val(key);
         var value = $.trim(tr.find("td:eq(1)").html());
         $("#propertyValue").val(value);
-        $('#propertyModal').modal('show');
     }
     $("#btn-preview").on("click",function(e){
         processRequest("preview");
@@ -230,7 +248,7 @@
         var requestProperty = $("input[name='requestProperty']:checked").val();
         var requestData = "";
         if ("raw" === requestProperty) {
-            requestProperty = $("#requestRawType").val();
+            requestProperty = $("#requestRawType").find("select").val();
             requestData = $("#rawPropertyData").val();
         } else {
             var trObj = $("#propertyTable").find("tbody").find("tr");
@@ -247,8 +265,8 @@
             $("#responseResult").val("正在请求数据，请稍后。。。");
             $.ajax({
                 type:"POST",
-                url:"url/previewDataUrl",
-                dataType: "json",
+                url: ctxPath + "/url/previewDataUrl",
+                dataType: "text",
                 data:{
                     data:JSON.stringify({
                         "requestUrl":url,
@@ -258,11 +276,11 @@
                     })
                 },
                 success: function (data) {
-                    if (data.meta.success) {
-                        $("#responseResult").val(JSON.stringify(data.data));
-                    } else {
-                        toastr.warning(data.meta.message);
-                    }
+                    $("#responseResult").val(data);
+                },
+                error: function (data) {
+                    let d = JSON.parse(data.responseText);
+                    $("#responseResult").val(d.meta.message);
                 }
             });
         } else {
