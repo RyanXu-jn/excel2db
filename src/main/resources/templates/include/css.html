@@ -1,24 +1,21 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:fragment="common">
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <title>文件转换数据库</title>
-    <link rel="stylesheet" th:href="@{/static/js/vendor/bootstrap-3.3.7/css/bootstrap.min.css}"/>
-    <link rel="stylesheet" th:href="@{/static/js/vendor/bootstrap-3.3.7/css/bootstrap-theme.min.css}"/>
-    <link rel="stylesheet" th:href="@{/static/js/vendor/font-awesome-4.7.0/css/font-awesome.min.css}"/>
-    <link rel="stylesheet" th:href="@{/static/js/vendor/jqueryStep/css/jquery.step.css}" />
-    <link rel="stylesheet" th:href="@{/static/js/vendor/toastr/css/toastr.css}" />
-    <link rel="stylesheet" th:href="@{/static/js/vendor/jquery-process/jquery-process.css}"/>
-    <link rel="stylesheet" th:href="@{/static/css/excel2db.css}"/>
+<meta charset="utf-8">
+<title>${title}</title>
+<meta name="renderer" content="webkit">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<title>文件转换数据库</title>
+<link rel="stylesheet" href="${ctxPath}/static/js/layui/css/layui.css" media="all"/>
+<link rel="stylesheet" href="${ctxPath}/static/js/toastr/css/toastr.css"/>
+<link rel="stylesheet" href="${ctxPath}/static/js/jqueryStep/css/jquery.step.css"/>
+<link rel="stylesheet" href="${ctxPath}/static/css/excel2db.css"/>
+<script type="text/javascript" src="${ctxPath}/static/js/layui/layui.js"></script>
+<script type="text/javascript" src="${ctxPath}/static/js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="${ctxPath}/static/js/js-xlsx/shim.min.js"></script>
+<script type="text/javascript" src="${ctxPath}/static/js/js-xlsx/xlsx.full.min.js"></script>
+<script type="text/javascript" src="${ctxPath}/static/js/jschardet/jschardet.min.js"></script>
+<script type="text/javascript" src="${ctxPath}/static/js/toastr/js/toastr.js"></script>
+<script type="text/javascript" src="${ctxPath}/static/js/jqueryStep/js/jquery.step.min.js"></script>
+<script type="text/javascript">
+    var ctxPath = "${ctxPath}";
+</script>
 
-    <script th:src="@{/static/js/jquery-1.12.4.min.js}"></script>
-    <script th:src="@{/static/js/vendor/bootstrap-3.3.7/js/bootstrap.min.js}"></script>
-    <script th:src="@{/static/js/vendor/jqueryStep/js/jquery.step.min.js}"></script>
-    <script th:src="@{/static/js/vendor/toastr/js/toastr.js}"></script>
-    <script th:src="@{/static/js/vendor/jquery-process/jquery-process.js}"></script>
-    <script th:src="@{/static/js/vendor/jschardet/jschardet.min.js}"></script>
-    <script type="text/javascript" th:src="@{/static/js/vendor/js-xlsx/shim.min.js}"></script>
-    <script type="text/javascript" th:src="@{/static/js/vendor/js-xlsx/xlsx.full.min.js}"></script>
-</head>
-</html>

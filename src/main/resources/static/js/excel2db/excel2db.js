@@ -5,26 +5,20 @@
 var input_dom_element = document.getElementById("inputFile");
 var wb,fileType;
 function process_wb(wb) {
-    processBar.setProcess(75);
     var ws = wb.Sheets[wb.SheetNames[0]];
     document.getElementById("table-content").innerHTML = XLSX.utils.sheet_to_html(ws, {
         id: "data-table",
         editable: true
     });
     $("#table-content").find("tbody").find("tr:gt(1000)").remove();
-    processBar.setProcess(100);
-    $("#progress-container").hide(2000);
 }
 function handle_ie() {
     var path = input_dom_element.value;
     if (!path) {
         return;
     }
-    processBar.setProcess(0);
     var data = IE_LoadFile(path);
-    processBar.setProcess(25);
     wb = XLSX.read(data, {type:'binary'});
-    processBar.setProcess(50);
     process_wb(wb);
 }
 function handle_fr(e) {
@@ -32,11 +26,9 @@ function handle_fr(e) {
     if (!f) {
         return;
     }
-    processBar.setProcess(0);
     fileType = f.name.substr(f.name.lastIndexOf('.')+1,f.name.length);
     var reader = new FileReader();
     var rABS = !!reader.readAsBinaryString;
-    processBar.setProcess(25);
     reader.onload = function(e) {
         var data = e.target.result;
         if (fileType === 'txt' || fileType === 'csv') {
@@ -74,11 +66,13 @@ function handle_fr(e) {
         process_wb(wb);
     };
     if(rABS) reader.readAsBinaryString(f); else reader.readAsArrayBuffer(f);
-    processBar.setProcess(50);
 }
 var handler = typeof IE_LoadFile !== 'undefined' ? handle_ie : handle_fr;
-if(input_dom_element.attachEvent) input_dom_element.attachEvent('onchange', handler);
-else input_dom_element.addEventListener('change', handler, false);
+if(input_dom_element.attachEvent) {
+    input_dom_element.attachEvent('onchange', handler);
+} else {
+    input_dom_element.addEventListener('change', handler, false);
+}
 function get_columns(wb, type) {   //获取head头(excel文件第一行)
     var sheet = wb.Sheets[wb.SheetNames[0]];
     var val, rowObject, range, columnHeaders, emptyRow, C;
@@ -137,9 +131,9 @@ function columnSetting(type) {
     }*/
     var html = '';
     for (var i = 0; i < columnHeaders.length;i++) {
-        html += '<div class="form-group">';
-        html += '<label for="'+columnHeaders[i]+'" class="col-sm-2 control-label">'+columnHeaders[i]+'</label>';
-        html +=     '<div class="col-sm-7">';
+        html += '<div class="layui-form-item">';
+        html += '<label class="layui-form-label">'+columnHeaders[i]+'</label>';
+        html +=     '<div class="layui-input-inline">';
         if (type === "mysql") {
             html +=         '<select class="form-control" id="'+columnHeaders[i]+'">';
             html +=             '<option value="VARCHAR" selected>VARCHAR</option>';
@@ -161,17 +155,19 @@ function columnSetting(type) {
             html +=         '</select>';
         }
         html +=     '</div>';
-        html += '<div class="col-md-3">';
-        html += '<input type="text" class="form-control" id="'+columnHeaders[i]+'-length" placeholder="长度/设置">';
-        html += '</div></div>';
+        html +=     '<div class="layui-input-inline">';
+        html +=         '<input type="text" class="layui-input" id="'+columnHeaders[i]+'-length" placeholder="长度/设置">';
+        html +=     '</div>';
+        html += '</div>';
     }
     $("#cols-form").html(html);
+    layform.render(null, 'colsFilter');
     return true;
 }
 function createTableDO(){
     var fieldArr = [];
     var fieldObj;
-    $("#cols-form").find("div[class='form-group']").each(function (index,ele) {
+    $("#cols-form").find("div[class='layui-form-item']").each(function (index,ele) {
         fieldObj = {};
         var fieldName = $.trim($(this).find("label").get(0).innerHTML);
         fieldObj.name = fieldName;
@@ -191,9 +187,9 @@ function createTableDO(){
 }
 function getColumnList(){
     var fieldName = "";
-    $("#cols-form").find("div[class='form-group']").each(function (index,ele) {
+    $("#cols-form").find("div[class='layui-form-item']").each(function (index,ele) {
         fieldName += $.trim($(this).find("label").get(0).innerHTML);
-        if (index !== $("#cols-form").find("div[class='form-group']").length - 1) {
+        if (index !== $("#cols-form").find("div[class='layui-form-item']").length - 1) {
             fieldName += ",";
         }
     });

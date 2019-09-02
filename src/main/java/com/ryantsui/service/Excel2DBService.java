@@ -10,11 +10,8 @@ import org.springframework.stereotype.Service;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 /**
  * Created by xufy on 2018/5/19.
@@ -40,18 +37,14 @@ public class Excel2DBService {
     public List<String> listAllTables()
             throws ClassNotFoundException,SQLException {
         List<String> list = new ArrayList<String>();
-        try {
-            connection = this.getConnection();
-            DatabaseMetaData databaseMetaData = connection.getMetaData();
-            String username = (String)DBConfig.getInstance().get("username");
-            ResultSet rs = databaseMetaData.getTables(null, username.toUpperCase(Locale.getDefault()), "%", new String[]{"TABLE"});
-            while (rs.next()) {
-                list.add(rs.getString("TABLE_NAME"));
-            }
-            this.closeConnection();
-        } catch (SQLException e) {
-            throw e;
+        connection = this.getConnection();
+        DatabaseMetaData databaseMetaData = connection.getMetaData();
+        String username = (String)DBConfig.getInstance().get("username");
+        ResultSet rs = databaseMetaData.getTables(null, username.toUpperCase(Locale.getDefault()), "%", new String[]{"TABLE"});
+        while (rs.next()) {
+            list.add(rs.getString("TABLE_NAME"));
         }
+        this.closeConnection();
         return list;
     }
 
@@ -64,18 +57,14 @@ public class Excel2DBService {
      */
     public List<String> listTableAllColumns(String sql) throws ClassNotFoundException,SQLException{
         List<String> list = new ArrayList<String>();
-        try {
-            connection = this.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            ResultSetMetaData rs = resultSet.getMetaData();
-            for (int i = 0; i < rs.getColumnCount(); i++) {
-                list.add(rs.getColumnName(i + 1));
-            }
-            connection.close();
-        } catch (SQLException e) {
-            throw e;
+        connection = this.getConnection();
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        ResultSet resultSet = preparedStatement.executeQuery();
+        ResultSetMetaData rs = resultSet.getMetaData();
+        for (int i = 0; i < rs.getColumnCount(); i++) {
+            list.add(rs.getColumnName(i + 1));
         }
+        connection.close();
         return list;
     }
 
@@ -86,14 +75,10 @@ public class Excel2DBService {
      * @throws SQLException 异常
      */
     public void createNewTable(String sql) throws ClassNotFoundException,SQLException{
-        try {
-            connection = this.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-            preparedStatement.executeUpdate();
-            connection.close();
-        } catch (SQLException e) {
-            throw e;
-        }
+        connection = this.getConnection();
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        preparedStatement.executeUpdate();
+        connection.close();
     }
     /**
      * 插入到数据库实例.
@@ -104,65 +89,90 @@ public class Excel2DBService {
      * @throws SQLException 异常
      */
     public void saveDataIns(String tableName,String columns,List<List<String>> dataList,List<Map<String,String>> columnTypeList)
-            throws ClassNotFoundException, SQLException, ParseException {
-        try {
-            connection = this.getConnection();
-            connection.setAutoCommit(false);
-            List<String> subList = null;
-            String columnType = null;
-            StringBuilder stringBuffer = new StringBuilder();
-            String driverName = (String)DBConfig.getInstance().get("driver");
-            if (driverName.contains("oracle")) {
-                stringBuffer.append("insert all ");
-            } else {
-                stringBuffer.append("insert into ").append(tableName).append(" (").append(columns).append(") ");
-                stringBuffer.append("values ");
-            }
-            for (List<String> aDataList : dataList) {
-                subList = aDataList;
-                if (driverName.contains("oracle")) {
-                    stringBuffer.append(" into ").append(tableName).append(" (").append(columns).append(") ")
-                        .append("values (");
-                } else {
-                    stringBuffer.append("(");
-                }
-                Date date;
-                for (int j = 0; j < subList.size(); j++) {
-                    columnType = columnTypeList.get(j).get("type");
-                    if ("INT".equals(columnType) || "FLOAT".equals(columnType) || "DOUBLE".equals(columnType)
-                            || "NUMBER".equals(columnType) || "LONG".equals(columnType)) {
-                        if (StringUtils.isNotBlank(subList.get(j))) {
-                            stringBuffer.append(subList.get(j));
-                        } else {
-                            stringBuffer.append(0);
-                        }
-                    } else if ("DATE".equals(columnType)) {
-                        date = DateUtils.parseDate(subList.get(j),pattern);
-                        stringBuffer.append("'").append(dateFormat.format(date)).append("'");
-                    } else if ("TIMESTAMP".equals(columnType)) {
-                        date = DateUtils.parseDate(subList.get(j),pattern);
-                        stringBuffer.append("'").append(timestampFormat.format(date)).append("'");
-                    } else {
-                        stringBuffer.append("'").append(subList.get(j)).append("'");
-                    }
-                    if (j != subList.size() - 1) {
-                        stringBuffer.append(",");
-                    }
-                }
-                stringBuffer.append(" )");
-            }
-            if (driverName.contains("oracle")){
-                stringBuffer.append(" SELECT 1 FROM DUAL");
-            }
-            PreparedStatement preparedStatement = connection.prepareStatement(stringBuffer.toString());
-            preparedStatement.execute();
-            connection.commit();
-            connection.setAutoCommit(true);
-            this.closeConnection();
-        } catch (SQLException | ParseException e) {
-            logger.error("SQL异常",e);
-            throw e;
+            throws Exception {
+        connection = this.getConnection();
+        connection.setAutoCommit(false);
+        String driverName = (String)DBConfig.getInstance().get("driver");
+        String sql = null;
+        if (driverName.contains("mysql")) {
+            sql = batchInsertMysql(tableName, columns, dataList, columnTypeList);
+        } else if (driverName.contains("oracle")) {
+            sql = batchInsertOracle(tableName, columns, dataList, columnTypeList);
+        } else {
+            throw new Exception("driver field is null");
         }
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        preparedStatement.execute();
+        connection.commit();
+        connection.setAutoCommit(true);
+        this.closeConnection();
+    }
+    private String batchInsertOracle(String tableName,String columns,List<List<String>> dataList,
+                                     List<Map<String,String>> columnTypeList) throws ParseException {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("insert into ").append(tableName).append(" (").append(columns).append(") ");
+        stringBuilder.append(" (");
+        List<String> subList = null;
+        for (int i = 0; i < dataList.size(); i++) {
+            subList = dataList.get(i);
+            stringBuilder.append(" select ");
+            stringBuilder.append(assembleFiled(subList, columnTypeList));
+            stringBuilder.append(" from dual ");
+            if (i != dataList.size() - 1) {
+                stringBuilder.append(" union all ");
+            }
+        }
+        stringBuilder.append(" )");
+        return stringBuilder.toString();
+
+    }
+    private String batchInsertMysql(String tableName, String columns, List<List<String>> dataList,
+                                    List<Map<String,String>> columnTypeList) throws ParseException {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("insert into ").append(tableName).append(" (").append(columns).append(") ");
+        stringBuilder.append("values ");
+        List<String> subList = null;
+        for (int i = 0; i < dataList.size(); i++) {
+            subList = dataList.get(i);
+            stringBuilder.append(" (");
+            stringBuilder.append(assembleFiled(subList, columnTypeList));
+            stringBuilder.append(" )");
+            if (i != dataList.size() - 1) {
+                stringBuilder.append(",");
+            }
+        }
+        return stringBuilder.toString();
+    }
+    private String assembleFiled(List<String> subList,
+                                 List<Map<String,String>> columnTypeList) throws ParseException {
+        StringBuilder result = new StringBuilder();
+        Date date;
+        String columnType;
+        String columnValue;
+        for (int j = 0; j < subList.size(); j++) {
+            columnType = columnTypeList.get(j).get("type");
+            columnValue = subList.get(j);
+            if ("INT".equals(columnType) || "FLOAT".equals(columnType) || "DOUBLE".equals(columnType)
+                    || "NUMBER".equals(columnType) || "LONG".equals(columnType)) {
+                if (StringUtils.isNotBlank(columnValue)) {
+                    result.append(columnValue);
+                } else {
+                    result.append(0);
+                }
+            } else if ("DATE".equals(columnType)) {
+                date = DateUtils.parseDate(columnValue,pattern);
+                result.append("'").append(dateFormat.format(date)).append("'");
+            } else if ("TIMESTAMP".equals(columnType)) {
+                date = DateUtils.parseDate(columnValue,pattern);
+                result.append("'").append(timestampFormat.format(date)).append("'");
+            } else {
+                result.append("'").append(columnValue).append("'");
+            }
+            if (j != subList.size() - 1) {
+                result.append(",");
+            }
+        }
+        return result.toString();
     }
     /**
      * 获取数据库连接.

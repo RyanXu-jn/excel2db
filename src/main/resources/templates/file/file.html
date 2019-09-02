@@ -1,97 +1,85 @@
-<!DOCTYPE HTML >
-<html xmlns:th="http://www.thymeleaf.org">
+<!DOCTYPE html>
+<html>
 <head>
+    <%
+    layout("../include/css.html",{title: "Excel2DB"}){}
+    %>
 </head>
-<body style="width: 100%;height: 100%;" th:fragment="file-content">
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-lg-12">
+<body class="layui-layout-body">
+<div class="layui-fluid">
+    <div class="layui-row">
+        <div class="layui-col-md12">
             <div id="step"></div>
         </div>
     </div>
-    <div class="row" >
-        <div class="col-lg-1"></div>
-        <div class="col-lg-10" style="height: 400px;">
+    <div id="uploadProgress" style="display: none;" class="layui-progress layui-progress-big" lay-showpercent="true" lay-filter="uploadProgress">
+        <div class="layui-progress-bar layui-bg-red" lay-percent="0%"></div>
+    </div>
+    <div class="layui-row">
+        <div class="layui-col-md12">
             <div id="step_0">
-                <a class="btn file-type btn-lg" role="button" id="btn-file">
-                    <i class="fa fa-file"></i>上传文件
-                </a>
-                <div style="margin-top: 5px;">*支持excel表格和csv文本文档</div>
+                <div style="margin: 0 auto;">
+                    <button type="button" class="layui-btn layui-btn-radius layui-btn-warm" id="upload-image">
+                        <i class="layui-icon layui-icon-upload"></i>选择文件
+                    </button>
+                    <input type="file" id="inputFile" style="display: none;"/>
+                    <p style="position: absolute;color:#c9302c;right: 0px;top: 0px;text-align: left;font-size: 12px;">
+                        *支持excel表格和csv文本文档,首行默认为列字段<br/>
+                        *限制最多显示1000行数据,表格支持编辑,请勿输入中文
+                    </p>
+                </div>
             </div>
             <div id="step_1">
-                <form class="form-horizontal">
-                    <div class="form-group">
-                        <div class="col-md-2"></div>
-                        <label for="inputFile" class="col-md-2 control-label">文件：</label>
-                        <div class="col-md-4">
-                            <input type="file" id="inputFile"/>
+                <div class="layui-col-md4 layui-col-md-offset4">
+                    <form class="layui-form" action="">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">数据库系统</label>
+                            <div class="layui-input-block">
+                                <select name="database-system" lay-verify="required" lay-filter="dbname">
+                                    <option value="com.mysql.jdbc.Driver" selected>MySql</option>
+                                    <option value="oracle.jdbc.driver.OracleDriver">Oracle</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <p style="color:#c9302c;float: right;margin-top: 10px;">
-                                *首行默认为列字段,请勿输入中文<br/>
-                                *限制最多显示1000行数据，表格支持编辑
-                            </p>
+                        <div class="layui-form-item">
+                            <label for="database-url" class="layui-form-label">数据库URL</label>
+                            <div class="layui-input-block">
+                                <input type="text" class="layui-input" id="database-url" placeholder="url"
+                                       value="jdbc:mysql://127.0.0.1:3306/databse"/>
+                            </div>
                         </div>
-                    </div>
-                </form>
-            </div>
-            <div id="step_2">
-                <div class="col-md-2"></div>
-                <div class="col-md-8">
-                    <form class="form-horizontal">
-                        <fieldset id="form-filedset">
-                            <div class="form-group">
-                                <label for="database-system" class="col-sm-2 control-label">数据库系统</label>
-                                <div class="col-sm-10">
-                                    <select class="form-control" id="database-system">
-                                        <option value="com.mysql.jdbc.Driver" selected="selected">MySql</option>
-                                        <option value="oracle.jdbc.driver.OracleDriver">Oracle</option>
-                                    </select>
-                                </div>
+                        <div class="layui-form-item">
+                            <label for="database-user" class="layui-form-label">用户名</label>
+                            <div class="layui-input-block">
+                                <input type="text" class="layui-input" id="database-user" placeholder="username"/>
                             </div>
-                            <div class="form-group">
-                                <label for="database-url" class="col-sm-2 control-label">数据库URL</label>
-                                <div class="col-sm-10">
-                                    <input type="text" class="form-control" id="database-url" placeholder="url" value="jdbc:mysql://127.0.0.1:3306/databse"/>
-                                </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label for="database-password" class="layui-form-label">密码</label>
+                            <div class="layui-input-block">
+                                <input type="password" class="layui-input" id="database-password"
+                                       placeholder="password"/>
                             </div>
-                            <div class="form-group">
-                                <label for="database-user" class="col-sm-2 control-label">用户名</label>
-                                <div class="col-sm-10">
-                                    <input type="text" class="form-control" id="database-user" placeholder="username"/>
-                                </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-input-block">
+                                <button class="layui-btn" type="button" id="testDBConnection">测试链接</button>
                             </div>
-                            <div class="form-group">
-                                <label for="database-password" class="col-sm-2 control-label">密码</label>
-                                <div class="col-sm-10">
-                                    <input type="password" class="form-control" id="database-password" placeholder="password"/>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <div class="col-sm-offset-2 col-sm-10">
-                                    <input class="btn btn-success" type="button" id="testDBConnection" value="测试链接"/>
-                                </div>
-                            </div>
-                        </fieldset>
+                        </div>
                     </form>
                 </div>
-                <div class="col-md-2"></div>
             </div>
-            <div id="step_3">
-                <div class="col-md-2"></div>
-                <div class="col-md-8">
-                    <div style="height: 390px;width: 100%;overflow: auto;">
-                        <form class="form-horizontal" id="cols-form">
-                        </form>
-                    </div>
+            <div id="step_2">
+                <div class="layui-col-md5 layui-col-md-offset4">
+                    <form class="layui-form" id="cols-form" lay-filter="colsFilter">
+                    </form>
                 </div>
-                <div class="col-md-2"></div>
             </div>
 
-            <div id="step_4">
-                <div class="col-md-4">
-                    <div  style="height: 370px;width:96%;overflow: auto;">
-                        <table class="table table-condensed table-striped" id="table-name-table">
+            <div id="step_3">
+                <div class="layui-col-md4">
+                    <div style="height:430px;width:96%;overflow: auto;">
+                        <table class="layui-table" lay-even id="table-name-table">
                             <thead>
                             <tr>
                                 <th>表名</th>
@@ -103,9 +91,9 @@
                         </table>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div  style="height: 370px;width:96%;overflow: auto;">
-                        <table class="table table-condensed table-striped" id="column-table">
+                <div class="layui-col-md4">
+                    <div style="height: 430px;width:96%;overflow: auto;">
+                        <table class="layui-table" lay-even id="column-table">
                             <thead>
                             <tr>
                                 <th><input type="checkbox" id="columns-check-all"/></th>
@@ -117,174 +105,157 @@
                         </table>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <form class="form-horizontal">
-                        <div class="form-group">
-                            <div class="col-sm-12">
-                                <div class="radio" style="margin-top: 10px;">
-                                    <label>
-                                        <input type="radio" name="optionsRadios" id="create-new-table" value="option1"/>
-                                        创建新表
-                                    </label>
-                                </div>
+                <div class="layui-col-md4">
+                    <form class="layui-form">
+                        <div class="layui-form-item">
+                            <input type="radio" name="optionsRadios" id="create-new-table" value="create-new-table" lay-filter="tableRadio"/>
+                            创建新表
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-input-block">
+                                <input type="text" class="layui-input" id="table-name" placeholder="表名称"
+                                       disabled="disabled"/>
                             </div>
                         </div>
-                        <fieldset id="create-new-table-filedset">
-                            <div class="form-group">
-                                <div class="col-sm-offset-1 col-sm-11">
-                                    <label for="table-name" class="col-sm-3 control-label">表名称</label>
-                                    <div class="col-sm-9">
-                                        <input type="text" class="form-control" id="table-name" placeholder="表名称" disabled="disabled"/>
-                                    </div>
-                                </div>
-                            </div>
-                        </fieldset>
-                        <div class="form-group">
-                            <div class="col-sm-12">
-                                <div class="radio">
-                                    <label>
-                                        <input type="radio" name="optionsRadios" id="append-table" value="option1"  checked="checked"/>
-                                        追加数据
-                                    </label>
-                                </div>
+                        <div class="layui-form-item">
+                            <input type="radio" name="optionsRadios" id="append-table" value="append-table"
+                                   checked="checked" lay-filter="tableRadio"/>
+                            追加数据
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-input-block">
+                                <span>已选择表：</span><span id="selected-table"></span><br/>
+                                <span style="vertical-align: top">已选择列：</span><span id="selected-columns"></span>
                             </div>
                         </div>
-                        <fieldset>
-                            <div class="form-group">
-                                <div class="col-sm-offset-1 col-sm-11">
-                                    <span>已选择表：</span><span id="selected-table"></span><br/>
-                                    <span style="vertical-align: top">已选择列：</span><span id="selected-columns"></span>
-                                </div>
-                            </div>
-                        </fieldset>
                     </form>
                 </div>
             </div>
             <div id="table-content">
             </div>
         </div>
-        <div class="col-lg-1"></div>
     </div>
-    <div class="row">
-        <div class="col-lg-1"></div>
-        <div class="col-lg-10">
-            <div style="float: right;margin-right: 15px;display: none" id="btn-opers">
-                <a class="btn custom-btn btn-lg" role="button" id="prevBtn">
-                    <i class="fa fa-arrow-circle-o-left"></i>上一步
-                </a>
-                <a class="btn custom-btn btn-lg" role="button" id="nextBtn">
-                    <i class="fa fa-arrow-circle-o-right"></i>下一步
-                </a>
-                <a class="btn custom-btn btn-lg" role="button" id="uploadBtn" style="display:none;">
-                    <i class="fa fa-upload"></i>开始上传
-                </a>
-            </div>
-        </div>
-        <div class="col-lg-1"></div>
+    <div class="layui-row" style="position: fixed;right: 20px;bottom:0;">
+        <button type="button" class="layui-btn layui-btn-radius" id="prevBtn" style="display: none;">上一步
+        </button>
+        <button type="button" class="layui-btn layui-btn-radius" id="nextBtn">下一步</button>
+        <button type="button" class="layui-btn layui-btn-radius" id="uploadBtn" style="display:none;">开始上传
+        </button>
     </div>
 </div>
 </body>
-<script type="text/javascript" th:src="@{/static/js/excel2db/excel2db.js}"></script>
 </html>
+<script type="text/javascript" src="${ctxPath}/static/js/excel2db/excel2db.js"></script>
 <script type="text/javascript">
-    var dbDriver,dbUrl,dbUsername,dbPassword;
+    var layform, layElement;
+    layui.use(['form', 'element'], function () {
+        layform = layui.form;
+        const $ = layui.jquery;
+        layElement = layui.element;
+        layform.on('select(dbname)', function (data) {
+            var value = data.value;
+            if (value.indexOf("mysql") >= 0) {
+                $("#database-url").val("jdbc:mysql://127.0.0.1:3306/databse");
+            } else if (value.indexOf("oracle") >= 0) {
+                $("#database-url").val("jdbc:oracle:thin:@127.0.0.1:1521:orcl");
+            }
+        });
+        layform.on('radio(tableRadio)', function(data){
+            if ("create-new-table" === data.value) {
+                $("#table-name").removeProp("disabled");
+            } else {
+                $("#table-name").prop("disabled", "disabled");
+            }
+        });
+    });
+    var dbDriver, dbUrl, dbUsername, dbPassword;
     var $step = $("#step");
-    $("#step_0").css("display","block");
+    $("#step_0").css("display", "block");
     $step.step({
         index: 0,
         time: 500,
-        title: ["选择上传类型", "选择文件", "数据库设置","字段配置", "上传设置"]
+        title: ["选择文件", "数据库设置", "字段配置", "上传设置"]
     });
-    $("#prevBtn").on("click", function() {
+    $("#prevBtn").on("click", function () {
         $step.prevStep();
         if (0 === $step.getIndex()) {
-            $("#step_1").css("display","none");
-            $("#step_0").css("display","block");
-            $("#btn-opers").css("display","none");
-            $("#table-content").css("display","none");
+            $("#step_1").css("display", "none");
+            $("#step_0").css("display", "block");
+            $("#table-content").css("display", "block");
+            $("#prevBtn").css("display", "none");
         } else if (1 === $step.getIndex()) {
-            $("#step_2").css("display","none");
-            $("#step_1").css("display","block");
-            $("#table-content").css("display","block");
-        } else if (2 === $step.getIndex()){
-            $("#step_3").css("display","none");
-            $("#step_2").css("display","block");
-            $("#table-content").css("display","none");
-        } else if (3 === $step.getIndex()) {
-            $("#step_4").css("display","none");
-            $("#step_3").css("display","block");
-            $("#uploadBtn").css("display","none");
-            $("#nextBtn").css("display","");
+            $("#step_2").css("display", "none");
+            $("#step_1").css("display", "block");
+        } else if (2 === $step.getIndex()) {
+            $("#step_3").css("display", "none");
+            $("#step_2").css("display", "block");
+            $("#nextBtn").css("display", "inline-block");
+            $("#uploadBtn").css("display", "none");
         }
     });
-    $("#nextBtn").on("click",function() {
-        $("#btn-opers").css("display","block");
+    $("#nextBtn").on("click", function () {
         if (0 === $step.getIndex()) {
-            $("#step_0").css("display","none");
-            $("#step_1").css("display","block");
-            $("#table-content").css("display","block");
-        } else if (1 === $step.getIndex()){
-            if (columnSetting("mysql")) {
-                $("#step_1").css("display","none");
-                $("#step_2").css("display","block");
-                $("#table-content").css("display","none");
-            } else {
-                return;
-            }
-        } else if (2 === $step.getIndex()) {
+            $("#step_0").css("display", "none");
+            $("#step_1").css("display", "block");
+            $("#table-content").css("display", "none");
+            $("#prevBtn").css("display", "inline-block");
+        } else if (1 === $step.getIndex()) {
             if (!(testDBConnection())) {
                 return;
             }
-            $("#step_2").css("display","none");
-            $("#step_3").css("display","block");
-        } else if (3 === $step.getIndex()) {
-            $("#step_3").css("display","none");
-            $("#step_4").css("display","block");
-            $("#nextBtn").css("display","none");
-            $("#uploadBtn").css("display","");
+            $("#step_1").css("display", "none");
+            $("#step_2").css("display", "block");
+        } else if (2 === $step.getIndex()) {
+            $("#step_2").css("display", "none");
+            $("#step_3").css("display", "block");
+            $("#nextBtn").css("display", "none");
+            $("#uploadBtn").css("display", "");
         }
         $step.nextStep();
     });
     //step_0
-    $("#btn-file").on("click",function(){
-        $("#nextBtn").click();
+    $("#upload-image").on("click", function () {
+        $("#inputFile").trigger('click');
     });
-    //step_2
+
+    //step_1
     function settingDbField() {
-        dbDriver = $("#database-system").val();
+        dbDriver = $("select[name='database-system']").val();
         dbUrl = $("#database-url").val();
         dbUsername = $("#database-user").val();
         dbPassword = $("#database-password").val();
         if (dbDriver.indexOf("mysql") >= 0) {
             columnSetting("mysql");
-        } else if (dbDriver.indexOf("oracle") >= 0){
+        } else if (dbDriver.indexOf("oracle") >= 0) {
             columnSetting("oracle");
         }
-        return !!(dbDriver&&dbUrl&&dbUsername&&dbPassword);
+        return (dbDriver && dbUrl && dbUsername && dbPassword);
     }
-    $("#testDBConnection").on("click",function(){
+
+    $("#testDBConnection").on("click", function () {
         if (testDBConnection()) {
             toastr.success("连接成功");
         }
     });
+
     function testDBConnection() {
-        if (!settingDbField()){
+        if (!settingDbField()) {
             toastr.warning("数据库参数不能为空！");
             return false;
         }
         var isSuccess = true;
         $.ajax({
-            type:'GET',
-            url:"/file/listDBTables",
-            async:false,
-            data:{
-                "driver":dbDriver,
-                "url":dbUrl,
-                "username":dbUsername,
-                "password":dbPassword
+            type: 'GET',
+            url: "/file/listDBTables",
+            async: false,
+            data: {
+                "driver": dbDriver,
+                "url": dbUrl,
+                "username": dbUsername,
+                "password": dbPassword
             },
-            dataType:'json',
-            success:function (data) {
+            dataType: 'json',
+            success: function (data) {
                 if (data.meta.success) {
                     initTableNameTable(data);
                 } else {
@@ -295,45 +266,31 @@
         });
         return isSuccess;
     }
+
     function initTableNameTable(data) {
         var html = '';
-        for (var i = 0; i < data.data.length; i++){
+        for (var i = 0; i < data.data.length; i++) {
             html += '<tr><td>' + data.data[i] + "</td></tr>";
         }
         $("#table-name-table").find("tbody").html(html);
     }
-    $("select[id='database-system']").change(function(){
-        var value = $(this).val();
-        if (value.indexOf("mysql") >= 0) {
-            $("#database-url").val("jdbc:mysql://127.0.0.1:3306/databse");
-            columnSetting("mysql");
-        } else if (value.indexOf("oracle") >= 0) {
-            $("#database-url").val("jdbc:oracle:thin:@127.0.0.1:1521:orcl");
-            columnSetting("oracle");
-        }
-    });
-    //step_4
-    $("input:radio[name='optionsRadios']").change(function(){
-        if ("create-new-table" === $(this).prop("id")) {
-            $("#create-new-table-filedset").find("input").removeProp("disabled");
-        } else {
-            $("#create-new-table-filedset").find("input").prop("disabled","disabled");
-        }
-    });
-    $("#table-name-table").delegate("td", "click", function(){
-        if (isCreateNewTable()) {
+
+
+    //step_2
+    $("#table-name-table").on("click", "td", function () {
+        if (createNewTable()) {
             return;
         }
         $("#selected-table").html($(this).text());
         $("#selected-columns").empty();
         $("#table-name-table").find("td").removeClass("td-selected");
-        $("#columns-check-all").prop("checked",false);
+        $("#columns-check-all").prop("checked", false);
         $(this).addClass("td-selected");
         $.ajax({
-            type:'GET',
-            url:'/file/listTableColumns',
-            data:{"tableName":$(this).text()},
-            success:function (data) {
+            type: 'GET',
+            url: '/file/listTableColumns',
+            data: {"tableName": $(this).text()},
+            success: function (data) {
                 if (data.meta.success) {
                     initColumnNameTable(data);
                 } else {
@@ -342,39 +299,42 @@
             }
         });
     });
+
     function initColumnNameTable(data) {
         var html = '';
-        for (var i = 0; i < data.data.length; i++){
+        for (var i = 0; i < data.data.length; i++) {
             html += '<tr>';
-            html += '<td><input type="checkbox" name="columnName" id="' + data.data[i] + '" value="' + data.data[i] + '"></td>';
+            html += '<td><input type="checkbox" lay-skin="primary" name="columnName" id="' + data.data[i] + '" value="' + data.data[i] + '"></td>';
             html += '<td>' + data.data[i] + '</td>';
             html += '</tr>';
         }
         $("#column-table").find("tbody").html(html);
     }
-    $("#columns-check-all").click(function(){
-        if (isCreateNewTable()) {
+
+    $("#columns-check-all").on('click', function () {
+        if (createNewTable()) {
             return;
         }
         var obj = $("#selected-columns");
+        obj.empty();
+        var columnName = $("input[name='columnName']");
         if ($("#columns-check-all").is(":checked")) {
-            $("input[name='columnName']").each(function(index,dom){
-                $(this).prop("checked",true);
-                if (file === 0) {
-                    obj.html($(this).val());
-                } else {
-                    obj.append("," + $(this).val());
+            let len = columnName.length;
+            columnName.each(function (index, dom) {
+                $(this).prop("checked", true);
+                obj.append($(this).val());
+                if (index !== len - 1 ) {
+                    obj.append(",");
                 }
             });
         } else {
-            $("input[name='columnName']").each(function(){
-                $(this).prop("checked",false);
+            columnName.each(function () {
+                $(this).prop("checked", false);
             });
-            obj.empty();
         }
     });
-    $("#column-table").delegate("input[name='columnName']","click",function (){
-        if (isCreateNewTable()) {
+    $("#column-table").on( "click", "input[name='columnName']", function () {
+        if (createNewTable()) {
             return;
         }
         var selectedObj = $("#selected-columns");
@@ -386,34 +346,37 @@
             }
         } else {
             if (selectedObj.html().indexOf("," + $(this).prop("id")) >= 0) {
-                selectedObj.html(selectedObj.html().replace("," + $(this).prop("id"),""));
+                selectedObj.html(selectedObj.html().replace("," + $(this).prop("id"), ""));
             } else {
-                selectedObj.html(selectedObj.html().replace($(this).prop("id"),""));
+                selectedObj.html(selectedObj.html().replace($(this).prop("id"), ""));
             }
         }
     });
-    function isCreateNewTable() {
+
+    function createNewTable() {
         //如果是创建新表，则取消表名和列名的点击事件
         if ($("input:radio[name='optionsRadios']:checked").prop("id") === "create-new-table") {
             return true;
         }
         return false;
     }
+
     //upload
-    $("#uploadBtn").on("click",function(){
-        if (isCreateNewTable()) {
-            if ($("#table-name").val()) {
+    $("#uploadBtn").on("click", function () {
+        if (createNewTable()) {
+            let tableName = $("#table-name").val();
+            if (tableName) {
                 $.ajax({
-                    type:"POST",
-                    url:"/file/createNewTable",
-                    data:{
-                        "tableName":$("#table-name").val(),
-                        "data":JSON.stringify(createTableDO())
+                    type: "POST",
+                    url: "/file/createNewTable",
+                    data: {
+                        "tableName": tableName,
+                        "data": JSON.stringify(createTableDO())
                     },
-                    success:function (data) {
+                    success: function (data) {
                         if (data.meta.success) {
                             toastr.success("创建表成功");
-                            saveData($("#table-name").val(),getColumnList(),get_columns_content(wb,fileType));
+                            saveData($("#table-name").val(), getColumnList(), get_columns_content(wb, fileType));
                         } else {
                             toastr.error(data.meta.message);
                         }
@@ -423,41 +386,47 @@
                 toastr.warning("表名称不能为空！");
             }
         } else {
-            if ($("#selected-table").html() && $("#selected-columns").html()) {
-                saveData($("#selected-table").html(),$("#selected-columns").html(),get_columns_content(wb,fileType));
+            let selectedTable = $("#selected-table").html();
+            let selectedColumns = $("#selected-columns").html();
+            if (selectedTable && selectedColumns) {
+                saveData(selectedTable, selectedColumns, get_columns_content(wb, fileType));
             } else {
                 toastr.warning("请选择上传表和列！");
             }
         }
     });
-    function saveData(tableName,columns,columnData) {
+
+    function saveData(tableName, columns, columnData) {
         var columnArr = columns.split(",");
         if (columnArr.length !== columnData[0].length) {
             toastr.warning("数据列与表列长度不匹配!");
             return;
         }
-        processBar.setProcess(0);
+        $("#uploadProgress").css("display", "block");
+        layElement.progress('uploadProgress', '0%');
         var num = 500;
         if (columnData.length <= num) {
-            loopSendData(tableName,columns,0,columnData.length,num,columnData);
+            loopSendData(tableName, columns, 0, columnData.length, num, columnData);
         } else {
-            loopSendData(tableName,columns,0,num,num,columnData);
+            loopSendData(tableName, columns, 0, num, num, columnData);
         }
     }
-    function loopSendData(tableName,columns,fromIndex,toIndex,num,columnData) {
+
+    function loopSendData(tableName, columns, fromIndex, toIndex, num, columnData) {
         $.ajax({
-            type:"POST",
-            url:"/file/saveData",
-            data:{
-                "tableName":tableName,
-                "columns":columns,
-                "data":JSON.stringify(columnData.slice(fromIndex,toIndex)),
-                "columnTypes":JSON.stringify(createTableDO())
+            type: "POST",
+            url: "/file/saveData",
+            data: {
+                "tableName": tableName,
+                "columns": columns,
+                "data": JSON.stringify(columnData.slice(fromIndex, toIndex)),
+                "columnTypes": JSON.stringify(createTableDO())
             },
-            success:function (data) {
+            success: function (data) {
                 if (data.meta.success) {
-                    processBar.setProcess(parseInt(toIndex/columnData.length * 100));
+                    layElement.progress('uploadProgress', parseInt(toIndex / columnData.length * 100) + '%');
                     if (toIndex === columnData.length) {
+                        $("#uploadProgress").css("display", "none");
                         toastr.success("上传成功");
                     } else {
                         fromIndex = toIndex;
@@ -465,11 +434,12 @@
                         if (toIndex > columnData.length) {
                             toIndex = columnData.length;
                         }
-                        loopSendData(tableName,columns,fromIndex,toIndex,num,columnData);
+                        loopSendData(tableName, columns, fromIndex, toIndex, num, columnData);
                     }
                 } else {
                     toastr.error(data.meta.message);
-                    processBar.setProcess(100);
+                    $("#uploadProgress").css("display", "none");
+                    layElement.progress('uploadProgress', '100%');
                 }
             }
         });

@@ -19,9 +19,13 @@ public class DBConfig {
      * 获取实例.
      * @return DBConfig
      */
-    public static DBConfig getInstance() {
+    public static synchronized DBConfig getInstance() {
         if (null == instance) {
-            instance = new DBConfig();
+            synchronized (DBConfig.class) {
+                if (null == instance) {
+                    instance = new DBConfig();
+                }
+            }
         }
         return instance;
     }

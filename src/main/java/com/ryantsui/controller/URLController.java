@@ -1,8 +1,8 @@
 package com.ryantsui.controller;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.TypeReference;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ryantsui.entity.JsonMessage;
 import com.ryantsui.utils.HttpClient;
 import org.springframework.http.MediaType;
@@ -19,7 +19,8 @@ import java.util.Map;
 @Controller
 @RequestMapping("url")
 public class URLController {
-
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+            .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
     /**
      * 预览url数据源数据
      * @param data 数据json
@@ -29,13 +30,13 @@ public class URLController {
     @RequestMapping(value="/previewDataUrl",method = RequestMethod.POST,produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseBody
     public JsonMessage prepreviewDataUrl(String data) throws Exception {
-        Map<String,String> param = JSON.parseObject(data, new TypeReference<Map<String, String>>() {});
+        Map<String,String> param = objectMapper.readValue(data, new TypeReference<Map<String, String>>() {});
         if(null == param){
             return new JsonMessage().failure("参数为空");
         }
         String result = HttpClient.previewDataByUrl(param.get("requestUrl"),param.get("requestType"),
                 param.get("requestProperty"),param.get("requestData"));
-        JSONObject object = JSON.parseObject(result);
+        Map<String, Object> object = objectMapper.readValue(result, new TypeReference<Map<String, Object>>(){});
         return new JsonMessage().success(object);
     }
 
@@ -49,7 +50,7 @@ public class URLController {
     @ResponseBody
     public JsonMessage saveDataUrl(String data) throws Exception{
         try {
-            Map<String, Object> param = JSON.parseObject(data, new TypeReference<Map<String, Object>>() {
+            Map<String, Object> param = objectMapper.readValue(data, new TypeReference<Map<String, Object>>() {
             });
             if (null == param) {
                 return new JsonMessage().failure("参数为空");

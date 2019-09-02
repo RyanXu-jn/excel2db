@@ -1,6 +1,8 @@
 package com.ryantsui.controller;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ryantsui.config.DBConfig;
 import com.ryantsui.entity.JsonMessage;
 import com.ryantsui.service.Excel2DBService;
@@ -15,9 +17,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.io.IOException;
 import java.sql.*;
 import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -29,9 +31,14 @@ import java.util.Map;
 @RequestMapping("file")
 public class Excel2DBController {
     private static final Logger logger = LoggerFactory.getLogger(Excel2DBController.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+            .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+    private final Excel2DBService excel2DBService;
 
     @Autowired
-    private Excel2DBService excel2DBService;
+    public Excel2DBController(Excel2DBService excel2DBService) {
+        this.excel2DBService = excel2DBService;
+    }
 
     /**
      * 用户自定义数据库连接.
@@ -93,8 +100,8 @@ public class Excel2DBController {
      */
     @RequestMapping(value="createNewTable",method = RequestMethod.POST,produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseBody
-    public JsonMessage createNewTable(String tableName,String data) throws ClassNotFoundException,SQLException{
-        List<Map<String,String>> DO = JSON.parseObject(data,new TypeReference<List<Map<String,String>>>(){});
+    public JsonMessage createNewTable(String tableName,String data) throws ClassNotFoundException, SQLException, IOException {
+        List<Map<String,String>> DO = objectMapper.readValue(data,new TypeReference<List<Map<String,String>>>(){});
         StringBuilder stringBuffer = new StringBuilder();
         stringBuffer.append("create table ").append(tableName).append(" (");
         Map<String,String> tempMap = null;
@@ -129,9 +136,9 @@ public class Excel2DBController {
      */
     @RequestMapping(value = "saveData",produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseBody
-    public JsonMessage saveData(String tableName,String columns,String data,String columnTypes) throws ClassNotFoundException, SQLException, ParseException {
-        List<List<String>> dataList = JSON.parseObject(data, new TypeReference< List<List<String>>>() {});
-        List<Map<String,String>> columnTypeList = JSON.parseObject(columnTypes, new TypeReference<List<Map<String,String>>>() {});
+    public JsonMessage saveData(String tableName,String columns,String data,String columnTypes) throws Exception {
+        List<List<String>> dataList = objectMapper.readValue(data, new TypeReference< List<List<String>>>() {});
+        List<Map<String,String>> columnTypeList = objectMapper.readValue(columnTypes, new TypeReference<List<Map<String,String>>>() {});
         String[] columnsArr = columns.split(",");
         if (columnsArr.length != dataList.get(0).size()) {
             return new JsonMessage().failure("列数不匹配！");

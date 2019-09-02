@@ -1,31 +1,34 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:include="include/css :: common">
+<html>
+<head>
+    <%
+    layout("include/css.html",{title: "Excel2DB"}){}
+    %>
 </head>
-<body style="width: 100%;height: 100%;padding-top: 10px;">
-<div class="container-fluid">
-    <div class="row" style="border-bottom: 1px solid #ccc;padding-bottom: 10px;">
-        <div class="col-lg-4"></div>
-        <div class="col-lg-4">
-            <ul class="nav nav-pills nav-justified" role="tablist">
-                <li role="presentation" class="active"><a href="#read-file" aria-controls="home" role="tab" data-toggle="tab">读文件</a></li>
-                <li role="presentation"><a href="#read-url" aria-controls="profile" role="tab" data-toggle="tab">读URL</a></li>
-            </ul>
-        </div>
-        <div class="col-lg-4"></div>
+<body class="layui-layout-body">
+<div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+        <div class="index-logo"><img src="${ctxPath}/static/images/logo.png" style="width: 162px;height: 60px;"/></div>
+        <ul class="layui-nav" lay-filter="filter">
+            <li class="layui-nav-item layui-this"><a href="javascript:;">读文件</a></li>
+            <li class="layui-nav-item"><a href="javascript:;">读URL</a></li>
+        </ul>
     </div>
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="tab-content">
-                <div role="tabpanel" class="tab-pane active" id="read-file">
-                    <div th:include="file/file::file-content"></div>
-                </div>
-                <div role="tabpanel" class="tab-pane" id="read-url">
-                    <div th:include="url/url::url-content"></div>
-                </div>
-            </div>
-        </div>
+    <div class="layui-body">
+        <iframe src="${ctxPath}/file/file" allowtransparency="true" frameborder="0" height="100%" width="100%" ></iframe>
+    </div>
+    <div class="layui-footer">
+        © Ryan Xu
     </div>
 </div>
 </body>
 </html>
+<script type="text/javascript">
+    layui.use('element', function(){
+        var element = layui.element;
+
+        element.on('nav(filter)', function(data){
+            console.log(data);
+        });
+    });
+</script>
