@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ryantsui.entity.JsonMessage;
 import com.ryantsui.utils.HttpClient;
+import com.ryantsui.utils.OKHttpUtil;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,10 +35,10 @@ public class URLController {
         if(null == param){
             throw new Exception("参数为空");
         }
-        String result = HttpClient.previewDataByUrl(param.get("requestUrl"),param.get("requestType"),
-                param.get("requestProperty"),param.get("requestData"));
-        Map<String, Object> object = objectMapper.readValue(result, new TypeReference<Map<String, Object>>(){});
-        return objectMapper.writeValueAsString(object);
+        //String result = HttpClient.previewDataByUrl(param.get("requestUrl"),param.get("requestType"),
+         //       param.get("requestProperty"),param.get("requestData"));
+		return OKHttpUtil.previewDataByUrl(param.get("requestUrl"),param.get("requestType"),
+				      param.get("requestProperty"),param.get("requestData"));
     }
 
     /**
