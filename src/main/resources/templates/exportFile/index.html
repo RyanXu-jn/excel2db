@@ -18,18 +18,6 @@
     <div class="layui-row">
         <div class="layui-col-md12">
             <div id="step_0">
-                <div style="margin: 0 auto;">
-                    <button type="button" class="layui-btn layui-btn-radius layui-btn-warm" id="upload-image">
-                        <i class="layui-icon layui-icon-upload"></i>选择文件
-                    </button>
-                    <input type="file" id="inputFile" style="display: none;"/>
-                    <p style="position: absolute;color:#c9302c;right: 0px;top: 0px;text-align: left;font-size: 12px;">
-                        *支持excel表格和csv文本文档,首行默认为列字段<br/>
-                        *限制最多显示1000行数据,表格支持编辑,请勿输入中文
-                    </p>
-                </div>
-            </div>
-            <div id="step_1">
                 <div class="layui-col-md4 layui-col-md-offset4">
                     <form class="layui-form" action="">
                         <div class="layui-form-item">
@@ -45,7 +33,7 @@
                             <label for="database-url" class="layui-form-label">数据库URL</label>
                             <div class="layui-input-block">
                                 <input type="text" class="layui-input" id="database-url" placeholder="url"
-                                       value="jdbc:mysql://127.0.0.1:3306/databse"/>
+                                       value="jdbc:mysql://127.0.0.1:3306/database"/>
                             </div>
                         </div>
                         <div class="layui-form-item">
@@ -69,14 +57,7 @@
                     </form>
                 </div>
             </div>
-            <div id="step_2">
-                <div class="layui-col-md5 layui-col-md-offset4">
-                    <form class="layui-form" id="cols-form" lay-filter="colsFilter">
-                    </form>
-                </div>
-            </div>
-
-            <div id="step_3">
+            <div id="step_1">
                 <div class="layui-col-md4">
                     <div style="height:430px;width:96%;overflow: auto;">
                         <table class="layui-table" lay-even id="table-name-table">
@@ -108,30 +89,49 @@
                 <div class="layui-col-md4">
                     <form class="layui-form">
                         <div class="layui-form-item">
-                            <input type="radio" name="optionsRadios" id="create-new-table" value="create-new-table" lay-filter="tableRadio"/>
-                            创建新表
-                        </div>
-                        <div class="layui-form-item">
+                            <label class="layui-form-label">导出方式：</label>
                             <div class="layui-input-block">
-                                <input type="text" class="layui-input" id="table-name" placeholder="表名称"
-                                       disabled="disabled"/>
+                                <input type="radio" name="exportType" value="default" title="系统默认" checked lay-filter="exportType-filter">
+                                <input type="radio" name="exportType" value="custom" title="自定义SQL" lay-filter="exportType-filter">
                             </div>
                         </div>
-                        <div class="layui-form-item">
-                            <input type="radio" name="optionsRadios" id="append-table" value="append-table"
-                                   checked="checked" lay-filter="tableRadio"/>
-                            追加数据
+                        <div id="default-container">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">导出表：</label>
+                                <div class="layui-input-block" id="export-table" style="padding: 9px 10px;">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">导出列：</label>
+                                <div class="layui-input-block" id="export-columns" style="padding: 9px 10px;">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">导出行数：</label>
+                                <div class="layui-input-block">
+                                    <input type="radio" name="dataRows" value="all" title="全部" checked lay-filter="dataRows-filter">
+                                    <input type="radio" name="dataRows" value="part" title="部分"  lay-filter="dataRows-filter">
+                                    <input type="text" name="rowsNum" required  placeholder="请输入行数" autocomplete="off" class="layui-input" style="width: 200px;display: none;">
+                                </div>
+                            </div>
                         </div>
-                        <div class="layui-form-item">
-                            <div class="layui-input-block">
-                                <span>已选择表：</span><span id="selected-table"></span><br/>
-                                <span style="vertical-align: top">已选择列：</span><span id="selected-columns"></span>
+                        <div id="custom-container" style="display: none;">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">自定义SQL：</label>
+                                <div class="layui-input-block">
+                                    <textarea name="custom-sql"  id="custom-sql" placeholder="请输入SQL" class="layui-textarea"></textarea>
+                                </div>
                             </div>
                         </div>
                     </form>
                 </div>
             </div>
-            <div id="table-content">
+            <div id="step_2">
+                <div style="width: 60%;margin: 100px auto;">
+                    <div class="layui-progress layui-progress-big" lay-showPercent="true" lay-filter="downloadProgress">
+                        <div class="layui-progress-bar layui-bg-blue" lay-percent="0%"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -139,32 +139,39 @@
         <button type="button" class="layui-btn layui-btn-radius" id="prevBtn" style="display: none;">上一步
         </button>
         <button type="button" class="layui-btn layui-btn-radius" id="nextBtn">下一步</button>
-        <button type="button" class="layui-btn layui-btn-radius" id="uploadBtn" style="display:none;">开始上传
-        </button>
     </div>
 </div>
 </body>
 </html>
-<script type="text/javascript" src="${ctxPath}/static/js/excel2db/excel2db.js"></script>
 <script type="text/javascript">
-    var layform, layElement;
+    var layform, layElement, layer;
     layui.use(['form', 'element'], function () {
         layform = layui.form;
         const $ = layui.jquery;
         layElement = layui.element;
+        layer = layui.layer;
         layform.on('select(dbname)', function (data) {
             var value = data.value;
             if (value.indexOf("mysql") >= 0) {
-                $("#database-url").val("jdbc:mysql://127.0.0.1:3306/databse");
+                $("#database-url").val("jdbc:mysql://127.0.0.1:3306/database");
             } else if (value.indexOf("oracle") >= 0) {
                 $("#database-url").val("jdbc:oracle:thin:@127.0.0.1:1521:orcl");
             }
         });
-        layform.on('radio(tableRadio)', function(data){
-            if ("create-new-table" === data.value) {
-                $("#table-name").removeProp("disabled");
+        layform.on("radio(exportType-filter)", function (data) {
+            if ("default" === data.value) {
+                $("#default-container").show();
+                $("#custom-container").hide();
             } else {
-                $("#table-name").prop("disabled", "disabled");
+                $("#default-container").hide();
+                $("#custom-container").show();
+            }
+        });
+        layform.on("radio(dataRows-filter)", function (data) {
+            if ("part" === data.value) {
+                $("input[name='rowsNum']").show();
+            } else {
+                $("input[name='rowsNum']").hide();
             }
         });
     });
@@ -174,61 +181,51 @@
     $step.step({
         index: 0,
         time: 500,
-        title: ["选择文件", "数据库设置", "字段配置", "上传设置"]
+        title: ["配置数据库连接", "选择导出的表和列", "完成"]
     });
     $("#prevBtn").on("click", function () {
         $step.prevStep();
         if (0 === $step.getIndex()) {
-            $("#step_1").css("display", "none");
-            $("#step_0").css("display", "block");
-            $("#table-content").css("display", "block");
-            $("#prevBtn").css("display", "none");
+            $("#step_1").hide();
+            $("#step_0").show();
+            $("#prevBtn").hide();
         } else if (1 === $step.getIndex()) {
-            $("#step_2").css("display", "none");
-            $("#step_1").css("display", "block");
-        } else if (2 === $step.getIndex()) {
-            $("#step_3").css("display", "none");
-            $("#step_2").css("display", "block");
+            $("#step_2").hide();
+            $("#step_1").show();
             $("#nextBtn").css("display", "inline-block");
-            $("#uploadBtn").css("display", "none");
         }
     });
     $("#nextBtn").on("click", function () {
         if (0 === $step.getIndex()) {
-            $("#step_0").css("display", "none");
-            $("#step_1").css("display", "block");
-            $("#table-content").css("display", "none");
-            $("#prevBtn").css("display", "inline-block");
-        } else if (1 === $step.getIndex()) {
-            if (!(testDBConnection())) {
+            if (!testDBConnection()) {
                 return;
             }
-            $("#step_1").css("display", "none");
-            $("#step_2").css("display", "block");
-        } else if (2 === $step.getIndex()) {
-            $("#step_2").css("display", "none");
-            $("#step_3").css("display", "block");
-            $("#nextBtn").css("display", "none");
-            $("#uploadBtn").css("display", "");
+            $("#step_0").hide();
+            $("#step_1").show();
+            $("#prevBtn").css("display", "inline-block");
+            $step.nextStep();
+        } else if (1 === $step.getIndex()) {
+            if (!fieldNotNull()) {
+                return;
+            }
+            layer.confirm('请确认导出?', {icon: 3, title:'提示'}, function(index){
+                //下载数据
+                export2Excel();
+                //界面变化
+                $("#step_1").hide();
+                $("#step_2").show();
+                $("#nextBtn").hide();
+                layer.close(index);
+                $step.nextStep();
+            });
         }
-        $step.nextStep();
     });
     //step_0
-    $("#upload-image").on("click", function () {
-        $("#inputFile").trigger('click');
-    });
-
-    //step_1
     function settingDbField() {
         dbDriver = $("select[name='database-system']").val();
         dbUrl = $("#database-url").val();
         dbUsername = $("#database-user").val();
         dbPassword = $("#database-password").val();
-        if (dbDriver.indexOf("mysql") >= 0) {
-            columnSetting("mysql");
-        } else if (dbDriver.indexOf("oracle") >= 0) {
-            columnSetting("oracle");
-        }
         return (dbDriver && dbUrl && dbUsername && dbPassword);
     }
 
@@ -279,14 +276,13 @@
         $("#table-name-table").find("tbody").html(html);
     }
 
-
-    //step_2
+    //step_1
     $("#table-name-table").on("click", "td", function () {
-        if (createNewTable()) {
+        if (customSql()) {
             return;
         }
-        $("#selected-table").html($(this).text());
-        $("#selected-columns").empty();
+        $("#export-table").html($(this).text());
+        $("#export-columns").empty();
         $("#table-name-table").find("td").removeClass("td-selected");
         $("#columns-check-all").prop("checked", false);
         $(this).addClass("td-selected");
@@ -316,10 +312,10 @@
     }
 
     $("#columns-check-all").on('click', function () {
-        if (createNewTable()) {
+        if (customSql()) {
             return;
         }
-        var obj = $("#selected-columns");
+        var obj = $("#export-columns");
         obj.empty();
         var columnName = $("input[name='columnName']");
         if ($("#columns-check-all").is(":checked")) {
@@ -338,10 +334,10 @@
         }
     });
     $("#column-table").on( "click", "input[name='columnName']", function () {
-        if (createNewTable()) {
+        if (customSql()) {
             return;
         }
-        var selectedObj = $("#selected-columns");
+        var selectedObj = $("#export-columns");
         if ($(this).is(":checked")) {
             if (selectedObj.html()) {
                 selectedObj.append("," + $(this).prop("id"));
@@ -357,95 +353,77 @@
         }
     });
 
-    function createNewTable() {
-        //如果是创建新表，则取消表名和列名的点击事件
-        if ($("input:radio[name='optionsRadios']:checked").prop("id") === "create-new-table") {
+    function customSql() {
+        //如果是自定义sql，则取消表名和列名的点击事件
+        if ($("input:radio[name='exportType']:checked").val() === "custom") {
             return true;
         }
         return false;
     }
-
-    //upload
-    $("#uploadBtn").on("click", function () {
-        if (createNewTable()) {
-            let tableName = $("#table-name").val();
-            if (tableName) {
-                $.ajax({
-                    type: "POST",
-                    url: ctxPath + "/file/createNewTable",
-                    data: {
-                        "tableName": tableName,
-                        "data": JSON.stringify(createTableDO())
-                    },
-                    success: function (data) {
-                        if (data.meta.success) {
-                            toastr.success("创建表成功");
-                            saveData($("#table-name").val(), getColumnList(), get_columns_content(wb, fileType));
-                        } else {
-                            toastr.error(data.meta.message);
-                        }
-                    }
-                });
-            } else {
-                toastr.warning("表名称不能为空！");
+    function fieldNotNull() {
+        let returnValue = true;
+        if (customSql()) {
+            if (!$.trim($("#custom-sql").val())) {
+                layer.alert('请输入自定义sql');
+                returnValue = false;
             }
         } else {
-            let selectedTable = $("#selected-table").html();
-            let selectedColumns = $("#selected-columns").html();
-            if (selectedTable && selectedColumns) {
-                saveData(selectedTable, selectedColumns, get_columns_content(wb, fileType));
-            } else {
-                toastr.warning("请选择上传表和列！");
-            }
-        }
-    });
-
-    function saveData(tableName, columns, columnData) {
-        var columnArr = columns.split(",");
-        if (columnArr.length !== columnData[0].length) {
-            toastr.warning("数据列与表列长度不匹配!");
-            return;
-        }
-        $("#uploadProgress").css("display", "block");
-        layElement.progress('uploadProgress', '0%');
-        var num = 500;
-        if (columnData.length <= num) {
-            loopSendData(tableName, columns, 0, columnData.length, num, columnData);
-        } else {
-            loopSendData(tableName, columns, 0, num, num, columnData);
-        }
-    }
-
-    function loopSendData(tableName, columns, fromIndex, toIndex, num, columnData) {
-        $.ajax({
-            type: "POST",
-            url: ctxPath + "/file/saveData",
-            data: {
-                "tableName": tableName,
-                "columns": columns,
-                "data": JSON.stringify(columnData.slice(fromIndex, toIndex)),
-                "columnTypes": JSON.stringify(createTableDO())
-            },
-            success: function (data) {
-                if (data.meta.success) {
-                    layElement.progress('uploadProgress', parseInt(toIndex / columnData.length * 100) + '%');
-                    if (toIndex === columnData.length) {
-                        $("#uploadProgress").css("display", "none");
-                        toastr.success("上传成功");
-                    } else {
-                        fromIndex = toIndex;
-                        toIndex += num;
-                        if (toIndex > columnData.length) {
-                            toIndex = columnData.length;
-                        }
-                        loopSendData(tableName, columns, fromIndex, toIndex, num, columnData);
-                    }
-                } else {
-                    toastr.error(data.meta.message);
-                    $("#uploadProgress").css("display", "none");
-                    layElement.progress('uploadProgress', '100%');
+            if (!$.trim($("#export-table").text())) {
+                layer.alert("请选择要导出的表");
+                returnValue = false;
+            } else if(!$.trim($("#export-columns").text())) {
+                layer.alert("请勾选要导出的列");
+                returnValue = false;
+            } else if ($("input:radio[name='dataRows']:checked").val() === "part"){
+                if (!$.trim($("input[name='rowsNum']").val())) {
+                    layer.alert("请输入导出的行数");
+                    returnValue = false;
                 }
             }
-        });
+        }
+        return returnValue;
+    }
+    //导出
+    function export2Excel() {
+        setDownloadProgress(10);
+        let data = {
+            type: "",
+            tableName: "",
+            columnName: "",
+            dataRows: "All",
+            sql: ""
+        };
+        if (customSql()) {
+            data.type = "custom";
+            data.sql = $("#custom-sql").val();
+        } else {
+            data.type = "default";
+            data.tableName = $.trim($("#export-table").text());
+            data.columnName = $.trim($("#export-columns").text());
+            if ($("input:radio[name='dataRows']:checked").val() === "part") {
+                data.dataRows = $.trim($("input[name='rowsNum']").val());
+            }
+        }
+        var xhr = new XMLHttpRequest();
+        xhr.open('post', ctxPath + "/excel/downloadFailedUsingJson", true);
+        xhr.responseType = 'blob';
+        xhr.setRequestHeader('Content-Type', 'application/json;charset=utf-8');
+        xhr.onload = function () {
+            if (this.status === 200) {
+                setDownloadProgress(50);
+                let blob = this.response;
+                let a = document.createElement('a');
+                a.href = window.URL.createObjectURL(blob);
+                //设置文件名称
+                a.download = '数据表格.xlsx';
+                a.click();
+                setDownloadProgress(100);
+            }
+        };
+        xhr.send(JSON.stringify(data));
+        setDownloadProgress(25);
+    }
+    function setDownloadProgress(percent) {
+        layElement.progress('downloadProgress', percent + '%');
     }
 </script>

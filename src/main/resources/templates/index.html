@@ -10,8 +10,9 @@
     <div class="layui-header">
         <div class="index-logo"><img src="${ctxPath}/static/images/logo.png" style="width: 162px;height: 60px;"/></div>
         <ul class="layui-nav" lay-filter="filter">
-            <li class="layui-nav-item layui-this"><a href="javascript:;">读文件</a></li>
-            <li class="layui-nav-item"><a href="javascript:;">读URL</a></li>
+            <li class="layui-nav-item layui-this"><a href="javascript:;" tab="readFile">读文件</a></li>
+            <li class="layui-nav-item"><a href="javascript:;" tab="readURL">读URL</a></li>
+            <li class="layui-nav-item"><a href="javascript:;" tab="exportExcel">导出Excel</a></li>
         </ul>
     </div>
     <div class="layui-body">
@@ -31,11 +32,15 @@
             //console.log(this); //当前Tab标题所在的原始DOM元素
             //console.log(data.index); //得到当前Tab的所在下标
             //console.log(data.elem); //得到当前的Tab大容器
-            if ("读URL" === $(this).html()) {
-                $("#frameContent").attr("src", ctxPath + "/url/url");
-            } else if ("读文件" === $(this).html()) {
-                $("#frameContent").attr("src", ctxPath + "/file/file");
+            let url = "";
+            if ("readURL" === $(this).attr("tab")) {
+                url = ctxPath + "/url/url";
+            } else if ("readFile" === $(this).attr("tab")) {
+                url = ctxPath + "/file/file";
+            } else if ("exportExcel" === $(this).attr("tab")) {
+                url = ctxPath + "/exportFile/index";
             }
+            $("#frameContent").attr("src", url);
         });
     });
 </script>

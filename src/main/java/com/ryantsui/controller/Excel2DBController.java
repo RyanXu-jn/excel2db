@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ryantsui.config.DBConfig;
 import com.ryantsui.entity.JsonMessage;
-import com.ryantsui.service.Excel2DBService;
+import com.ryantsui.service.DBService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
 import java.sql.*;
-import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 
@@ -33,11 +32,11 @@ public class Excel2DBController {
     private static final Logger logger = LoggerFactory.getLogger(Excel2DBController.class);
     private static final ObjectMapper objectMapper = new ObjectMapper()
             .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-    private final Excel2DBService excel2DBService;
+    private final DBService DBService;
 
     @Autowired
-    public Excel2DBController(Excel2DBService excel2DBService) {
-        this.excel2DBService = excel2DBService;
+    public Excel2DBController(DBService DBService) {
+        this.DBService = DBService;
     }
 
     /**
@@ -50,7 +49,7 @@ public class Excel2DBController {
      * @throws ClassNotFoundException 异常
      * @throws SQLException 异常
      */
-    @RequestMapping(value = "/listDBTables",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @RequestMapping(value = "/listDBTables",method = RequestMethod.POST,produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseBody
     public JsonMessage connectDataBase(@RequestParam(value = "driver") String driver,
                                   @RequestParam(value = "url") String url,
@@ -61,7 +60,7 @@ public class Excel2DBController {
         DBConfig.getInstance().put("url",url);
         DBConfig.getInstance().put("username",username);
         DBConfig.getInstance().put("password",password);
-        List<String> tables = excel2DBService.listAllTables();
+        List<String> tables = DBService.listAllTables();
         return new JsonMessage().success(tables);
     }
 
@@ -86,7 +85,7 @@ public class Excel2DBController {
         } else if (driver.contains("oracle")) {
             tableSql = "select * from " + tableName + " where rownum < 10";
         }
-        List<String> list = excel2DBService.listTableAllColumns(tableSql);
+        List<String> list = DBService.listTableAllColumns(tableSql);
         return new JsonMessage().success(list);
     }
 
@@ -121,7 +120,7 @@ public class Excel2DBController {
         if (((String)DBConfig.getInstance().get("driver")).contains("mysql")) {
             stringBuffer.append(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         }
-        excel2DBService.createNewTable(stringBuffer.toString());
+        DBService.createNewTable(stringBuffer.toString());
         return new JsonMessage().success();
     }
 
@@ -146,14 +145,14 @@ public class Excel2DBController {
         //50条数据进行一次提交
         int num = 50;
         if (dataList.size() <= num) {
-            excel2DBService.saveDataIns(tableName,columns,dataList,columnTypeList);
+            DBService.saveDataIns(tableName,columns,dataList,columnTypeList);
         } else {
             int fromIndex = 0,toIndex = num;
             while(true) {
                 if (toIndex > dataList.size()) {
                     toIndex = dataList.size();
                 }
-                excel2DBService.saveDataIns(tableName,columns,dataList.subList(fromIndex,toIndex),columnTypeList);
+                DBService.saveDataIns(tableName,columns,dataList.subList(fromIndex,toIndex),columnTypeList);
                 if (toIndex == dataList.size()) {
                     break;
                 }
@@ -163,6 +162,4 @@ public class Excel2DBController {
         }
         return new JsonMessage().success();
     }
-
-
 }

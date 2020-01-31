@@ -17,8 +17,8 @@ import java.util.Date;
  * Created by xufy on 2018/5/19.
  */
 @Service
-public class Excel2DBService {
-    private static final Logger logger = LoggerFactory.getLogger(Excel2DBService.class);
+public class DBService {
+    private static final Logger logger = LoggerFactory.getLogger(DBService.class);
     private String[] pattern = new String[]{"yyyy-MM", "yyyyMM", "yyyy/MM",
             "yyyyMMdd", "yyyy-MM-dd", "yyyy/MM/dd",
             "yyyyMMddHHmmss",
@@ -56,7 +56,7 @@ public class Excel2DBService {
      * @throws SQLException 异常
      */
     public List<String> listTableAllColumns(String sql) throws ClassNotFoundException,SQLException{
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         connection = this.getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement(sql);
         ResultSet resultSet = preparedStatement.executeQuery();
@@ -80,6 +80,45 @@ public class Excel2DBService {
         preparedStatement.executeUpdate();
         connection.close();
     }
+
+    /**
+     * 根据sql查询结果.
+     * @param sql sql
+     * @return list
+     * @throws ClassNotFoundException 异常
+     * @throws SQLException 异常
+     */
+    public Map<String, Object> list(String sql) throws ClassNotFoundException,SQLException {
+        connection = this.getConnection();
+        PreparedStatement  preparedStatement = connection.prepareStatement(sql);
+        ResultSet resultSet = preparedStatement.executeQuery();
+        ResultSetMetaData md = resultSet.getMetaData(); //获得结果集结构信息,元数据
+        int columnCount = md.getColumnCount();   //获得列数
+        //拼装head
+        List<List<String>> head = new ArrayList<>();
+        List<String> headN;
+        for (int i = 1; i <= columnCount; i++) {
+            headN = new ArrayList<>();
+            headN.add(md.getColumnName(i));
+            head.add(headN);
+        }
+        //拼装list
+        List<List<String>> list = new ArrayList<>();
+        List<String> rowData;
+        while (resultSet.next()) {
+            rowData = new ArrayList<>();
+            for (int i = 1; i <= columnCount; i++) {
+                rowData.add(String.valueOf(resultSet.getObject(i)));
+            }
+            list.add(rowData);
+        }
+        connection.close();
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", list);
+        data.put("head", head);
+        return data;
+    }
+
     /**
      * 插入到数据库实例.
      * @param tableName 表名
