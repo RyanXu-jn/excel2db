@@ -1,10 +1,6 @@
 package com.ryantsui.controller;
 
 import com.alibaba.excel.EasyExcel;
-import com.alibaba.excel.ExcelWriter;
-import com.alibaba.excel.write.builder.ExcelWriterBuilder;
-import com.alibaba.excel.write.builder.ExcelWriterSheetBuilder;
-import com.alibaba.excel.write.metadata.WriteSheet;
 import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -158,9 +154,12 @@ public class ExportExcelController {
             }
         } else if (driver.contains("oracle")) {
             sql = sql.replace("select ", "select ROWNUM r,");
-            stringBuilder.append(" SELECT * FROM (").append(sql).append(" where rownum < ");
+            stringBuilder.append(" SELECT * FROM (").append(sql);
+            if (!sql.contains("where")) {
+                stringBuilder.append(" where ");
+            }
             // total+1 避免最后一条数据查询不出来问题
-            stringBuilder.append(Math.min(endRowNum, total + 1));
+            stringBuilder.append(" rownum < ").append(Math.min(endRowNum, total + 1));
             stringBuilder.append(") t where t.r >=").append(startRowNum);
         }
         return stringBuilder.toString();
