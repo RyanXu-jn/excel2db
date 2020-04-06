@@ -15,7 +15,7 @@
     <div id="uploadProgress" style="display: none;" class="layui-progress layui-progress-big" lay-showpercent="true" lay-filter="uploadProgress">
         <div class="layui-progress-bar layui-bg-red" lay-percent="0%"></div>
     </div>
-    <div class="layui-row">
+    <div class="layui-row" style="margin-top: 5px;">
         <div class="layui-col-md12">
             <div id="step_0">
                 <div style="margin: 0 auto;">
@@ -277,6 +277,7 @@
             html += '<tr><td>' + data.data[i] + "</td></tr>";
         }
         $("#table-name-table").find("tbody").html(html);
+        $("#column-table").find("tbody").empty();
     }
 
 
@@ -401,6 +402,15 @@
     });
 
     function saveData(tableName, columns, columnData) {
+        // 去除空数据
+        let temp;
+        for (var i = columnData.length - 1; i > -1; i--) {
+            temp = columnData[i];
+            if (temp.join(",") === temp.reverse().join(",")) {
+                columnData.splice(i, 1);
+            }
+        }
+        // 保存代码
         var columnArr = columns.split(",");
         if (columnArr.length !== columnData[0].length) {
             toastr.warning("数据列与表列长度不匹配!");
@@ -445,6 +455,10 @@
                     $("#uploadProgress").css("display", "none");
                     layElement.progress('uploadProgress', '100%');
                 }
+            },
+            error:function (data) {
+                $("#uploadProgress").css("display", "none");
+                toastr.warning(JSON.parse(data.responseText).meta.message);
             }
         });
     }

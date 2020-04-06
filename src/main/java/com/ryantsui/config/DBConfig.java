@@ -7,6 +7,7 @@ import java.util.Map;
  * 数据库配置信息单例模式.
  * Created by xufy on 2018/5/19.
  */
+@Deprecated
 public class DBConfig {
     private static DBConfig instance = null;
     private static Map<String,Object> map = null;

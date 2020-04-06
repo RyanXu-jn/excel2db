@@ -274,6 +274,7 @@
             html += '<tr><td>' + data.data[i] + "</td></tr>";
         }
         $("#table-name-table").find("tbody").html(html);
+        $("#column-table").find("tbody").empty();
     }
 
     //step_1
@@ -410,15 +411,25 @@
         xhr.setRequestHeader('Content-Type', 'application/json;charset=utf-8');
         xhr.onload = function () {
             if (this.status === 200) {
-                setDownloadProgress(50);
-                let blob = this.response;
-                let a = document.createElement('a');
-                a.href = window.URL.createObjectURL(blob);
-                //设置文件名称
-                a.download = '数据表格.xlsx';
-                a.click();
-                setDownloadProgress(100);
+                if (xhr.response.type === "application/json") {
+                    toastr.warning("下载失败，系统内部错误");
+                } else {
+                    setDownloadProgress(50);
+                    let blob = this.response;
+                    let a = document.createElement('a');
+                    a.href = window.URL.createObjectURL(blob);
+                    //设置文件名称
+                    a.download = '数据表格.xlsx';
+                    a.click();
+                }
+            } else if (this.status === 500){
+                toastr.warning("内部错误，请查看");
             }
+            setDownloadProgress(100);
+        };
+        xhr.onerror = function() {
+            toastr.warning("发生错误");
+            setDownloadProgress(100);
         };
         xhr.send(JSON.stringify(data));
         setDownloadProgress(25);

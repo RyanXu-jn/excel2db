@@ -3,7 +3,9 @@ package com.ryantsui.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ryantsui.cache.DBCache;
 import com.ryantsui.config.DBConfig;
+import com.ryantsui.entity.Db;
 import com.ryantsui.entity.JsonMessage;
 import com.ryantsui.service.DBService;
 import org.apache.commons.lang3.StringUtils;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.sql.*;
 import java.util.List;
@@ -52,15 +55,12 @@ public class Excel2DBController {
     @RequestMapping(value = "/listDBTables",method = RequestMethod.POST,produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseBody
     public JsonMessage connectDataBase(@RequestParam(value = "driver") String driver,
-                                  @RequestParam(value = "url") String url,
-                                  @RequestParam(value = "username") String username,
-                                  @RequestParam(value = "password") String password)
+                                       @RequestParam(value = "url") String url,
+                                       @RequestParam(value = "username") String username,
+                                       @RequestParam(value = "password") String password)
             throws ClassNotFoundException,SQLException {
-        DBConfig.getInstance().put("driver",driver);
-        DBConfig.getInstance().put("url",url);
-        DBConfig.getInstance().put("username",username);
-        DBConfig.getInstance().put("password",password);
-        List<String> tables = DBService.listAllTables();
+        DBCache.getInstance().initConnection(driver, url, username, password);
+        List<String> tables = DBService.listAllTables(DBCache.getInstance().getConnection());
         return new JsonMessage().success(tables);
     }
 
@@ -74,18 +74,19 @@ public class Excel2DBController {
      */
     @RequestMapping(value="listTableColumns",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseBody
-    public JsonMessage listTableColumns(@RequestParam(value="tableName") String tableName) throws ClassNotFoundException,SQLException{
+    public JsonMessage listTableColumns(@RequestParam(value="tableName") String tableName)
+            throws ClassNotFoundException,SQLException{
         if (!StringUtils.isNotBlank(tableName)) {
             return new JsonMessage().failure("表名不能为空");
         }
         String tableSql = null;
-        String driver = (String)DBConfig.getInstance().get("driver");
+        String driver = DBCache.getInstance().getDbEntity().getDriver();
         if (driver.contains("mysql")) {
             tableSql = "select * from " + tableName +" limit 10";
         } else if (driver.contains("oracle")) {
             tableSql = "select * from " + tableName + " where rownum < 10";
         }
-        List<String> list = DBService.listTableAllColumns(tableSql);
+        List<String> list = DBService.listTableAllColumns(tableSql, DBCache.getInstance().getConnection());
         return new JsonMessage().success(list);
     }
 
@@ -99,7 +100,8 @@ public class Excel2DBController {
      */
     @RequestMapping(value="createNewTable",method = RequestMethod.POST,produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseBody
-    public JsonMessage createNewTable(String tableName,String data) throws ClassNotFoundException, SQLException, IOException {
+    public JsonMessage createNewTable(String tableName,String data)
+            throws ClassNotFoundException, SQLException, IOException {
         List<Map<String,String>> DO = objectMapper.readValue(data,new TypeReference<List<Map<String,String>>>(){});
         StringBuilder stringBuffer = new StringBuilder();
         stringBuffer.append("create table ").append(tableName).append(" (");
@@ -107,7 +109,8 @@ public class Excel2DBController {
         for (int i = 0; i < DO.size(); i++) {
             tempMap = DO.get(i);
             stringBuffer.append(tempMap.get("name")).append(" ").append(tempMap.get("type"));
-            if ("VARCHAR".equals(tempMap.get("type")) || "VARCHAR2".equals(tempMap.get("type")) || "CHAR".equals(tempMap.get("type")) ){
+            if ("VARCHAR".equals(tempMap.get("type")) || "VARCHAR2".equals(tempMap.get("type"))
+                    || "CHAR".equals(tempMap.get("type")) ){
                 if (StringUtils.isNotBlank(tempMap.get("length"))) {
                     stringBuffer.append("(").append(tempMap.get("length")).append(")");
                 }
@@ -117,10 +120,10 @@ public class Excel2DBController {
             }
         }
         stringBuffer.append(")");
-        if (((String)DBConfig.getInstance().get("driver")).contains("mysql")) {
+        if (DBCache.getInstance().getDbEntity().getDriver().contains("mysql")) {
             stringBuffer.append(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         }
-        DBService.createNewTable(stringBuffer.toString());
+        DBService.createNewTable(stringBuffer.toString(), DBCache.getInstance().getConnection());
         return new JsonMessage().success();
     }
 
@@ -137,7 +140,8 @@ public class Excel2DBController {
     @ResponseBody
     public JsonMessage saveData(String tableName,String columns,String data,String columnTypes) throws Exception {
         List<List<String>> dataList = objectMapper.readValue(data, new TypeReference< List<List<String>>>() {});
-        List<Map<String,String>> columnTypeList = objectMapper.readValue(columnTypes, new TypeReference<List<Map<String,String>>>() {});
+        List<Map<String,String>> columnTypeList = objectMapper.readValue(columnTypes,
+                new TypeReference<List<Map<String,String>>>() {});
         String[] columnsArr = columns.split(",");
         if (columnsArr.length != dataList.get(0).size()) {
             return new JsonMessage().failure("列数不匹配！");
@@ -145,14 +149,16 @@ public class Excel2DBController {
         //50条数据进行一次提交
         int num = 50;
         if (dataList.size() <= num) {
-            DBService.saveDataIns(tableName,columns,dataList,columnTypeList);
+            DBService.saveDataIns(tableName,columns,dataList,columnTypeList,
+                    DBCache.getInstance().getConnection());
         } else {
             int fromIndex = 0,toIndex = num;
             while(true) {
                 if (toIndex > dataList.size()) {
                     toIndex = dataList.size();
                 }
-                DBService.saveDataIns(tableName,columns,dataList.subList(fromIndex,toIndex),columnTypeList);
+                DBService.saveDataIns(tableName,columns,dataList.subList(fromIndex,toIndex),
+                        columnTypeList, DBCache.getInstance().getConnection());
                 if (toIndex == dataList.size()) {
                     break;
                 }

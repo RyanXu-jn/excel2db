@@ -5,7 +5,7 @@
 
 	<groupId>com.ryantsui</groupId>
 	<artifactId>excel2db</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>2.2</version>
 	<packaging>jar</packaging>
 
 	<name>excel2db</name>

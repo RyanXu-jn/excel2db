@@ -1,6 +1,6 @@
 package com.ryantsui.service;
 
-import com.ryantsui.config.DBConfig;
+import com.ryantsui.cache.DBCache;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.slf4j.Logger;
@@ -26,25 +26,21 @@ public class DBService {
             "yyyy/MM/dd HH:mm:ss"};
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     private SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private Connection connection = null;
 
     /**
      * 获取数据库下所有数据表.
      * @return 表列表
-     * @throws ClassNotFoundException 异常
      * @throws SQLException 异常
      */
-    public List<String> listAllTables()
-            throws ClassNotFoundException,SQLException {
+    public List<String> listAllTables(Connection connection)
+            throws SQLException {
         List<String> list = new ArrayList<String>();
-        connection = this.getConnection();
         DatabaseMetaData databaseMetaData = connection.getMetaData();
-        String username = (String)DBConfig.getInstance().get("username");
+        String username = DBCache.getInstance().getDbEntity().getUsername();
         ResultSet rs = databaseMetaData.getTables(null, username.toUpperCase(Locale.getDefault()), "%", new String[]{"TABLE"});
         while (rs.next()) {
             list.add(rs.getString("TABLE_NAME"));
         }
-        this.closeConnection();
         return list;
     }
 
@@ -52,44 +48,57 @@ public class DBService {
      * 获取表所有列名.
      * @param sql 查询语句
      * @return List<String>
-     * @throws ClassNotFoundException 异常
      * @throws SQLException 异常
      */
-    public List<String> listTableAllColumns(String sql) throws ClassNotFoundException,SQLException{
+    public List<String> listTableAllColumns(String sql, Connection connection) throws SQLException{
         List<String> list = new ArrayList<>();
-        connection = this.getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement(sql);
         ResultSet resultSet = preparedStatement.executeQuery();
         ResultSetMetaData rs = resultSet.getMetaData();
         for (int i = 0; i < rs.getColumnCount(); i++) {
             list.add(rs.getColumnName(i + 1));
         }
-        connection.close();
+        resultSet.close();
+        preparedStatement.close();
         return list;
     }
 
     /**
      * 创建新表.
      * @param sql sql语句
-     * @throws ClassNotFoundException 异常
      * @throws SQLException 异常
      */
-    public void createNewTable(String sql) throws ClassNotFoundException,SQLException{
-        connection = this.getConnection();
+    public void createNewTable(String sql, Connection connection) throws SQLException{
         PreparedStatement preparedStatement = connection.prepareStatement(sql);
         preparedStatement.executeUpdate();
-        connection.close();
+        preparedStatement.close();
+    }
+
+    /**
+     * 统计查询总数.
+     * @param sql sql
+     * @param connection 数据库连接
+     * @return int
+     * @throws SQLException 异常
+     */
+    public int countTotalRows(String sql,Connection connection) throws SQLException {
+        String countSql = "select count(1) from (" + sql + ") t";
+        PreparedStatement preparedStatement = connection.prepareStatement(countSql);
+        ResultSet resultSet = preparedStatement.executeQuery();
+        int totalRows = 0;
+        if (resultSet.next()) {
+            totalRows = resultSet.getInt(1);
+        }
+        return totalRows;
     }
 
     /**
      * 根据sql查询结果.
      * @param sql sql
      * @return list
-     * @throws ClassNotFoundException 异常
      * @throws SQLException 异常
      */
-    public Map<String, Object> list(String sql) throws ClassNotFoundException,SQLException {
-        connection = this.getConnection();
+    public Map<String, List<List<String>>> list(String sql, Connection connection) throws SQLException {
         PreparedStatement  preparedStatement = connection.prepareStatement(sql);
         ResultSet resultSet = preparedStatement.executeQuery();
         ResultSetMetaData md = resultSet.getMetaData(); //获得结果集结构信息,元数据
@@ -112,8 +121,9 @@ public class DBService {
             }
             list.add(rowData);
         }
-        connection.close();
-        Map<String, Object> data = new HashMap<>();
+        resultSet.close();
+        preparedStatement.close();
+        Map<String, List<List<String>>> data = new HashMap<>();
         data.put("list", list);
         data.put("head", head);
         return data;
@@ -127,11 +137,11 @@ public class DBService {
      * @throws ClassNotFoundException 异常
      * @throws SQLException 异常
      */
-    public void saveDataIns(String tableName,String columns,List<List<String>> dataList,List<Map<String,String>> columnTypeList)
+    public void saveDataIns(String tableName,String columns,List<List<String>> dataList,
+                            List<Map<String,String>> columnTypeList, Connection connection)
             throws Exception {
-        connection = this.getConnection();
         connection.setAutoCommit(false);
-        String driverName = (String)DBConfig.getInstance().get("driver");
+        String driverName = DBCache.getInstance().getDbEntity().getDriver();
         String sql = null;
         if (driverName.contains("mysql")) {
             sql = batchInsertMysql(tableName, columns, dataList, columnTypeList);
@@ -142,9 +152,9 @@ public class DBService {
         }
         PreparedStatement preparedStatement = connection.prepareStatement(sql);
         preparedStatement.execute();
+        preparedStatement.close();
         connection.commit();
         connection.setAutoCommit(true);
-        this.closeConnection();
     }
     private String batchInsertOracle(String tableName,String columns,List<List<String>> dataList,
                                      List<Map<String,String>> columnTypeList) throws ParseException {
@@ -212,44 +222,5 @@ public class DBService {
             }
         }
         return result.toString();
-    }
-    /**
-     * 获取数据库连接.
-     * @return Connection
-     * @throws ClassNotFoundException 异常
-     * @throws SQLException 异常
-     */
-    private Connection getConnection()
-            throws ClassNotFoundException,SQLException {
-        try {
-            String driver = (String)DBConfig.getInstance().get("driver");
-            String url = (String)DBConfig.getInstance().get("url");
-            String username = (String)DBConfig.getInstance().get("username");
-            String password = (String)DBConfig.getInstance().get("password");
-            Class.forName(driver);
-            connection = DriverManager.getConnection(url,username,password);
-        } catch (SQLException e) {
-            logger.error("SQL异常",e);
-            throw e;
-        } catch (ClassNotFoundException e2) {
-            logger.error("未找到数据库驱动类",e2);
-            throw e2;
-        }
-        return connection;
-    }
-
-    /**
-     * 关闭数据库连接.
-     * @throws SQLException 异常
-     */
-    private void closeConnection() throws SQLException {
-        try {
-            if (null != connection) {
-                connection.close();
-            }
-        } catch (SQLException e) {
-            logger.error("关闭数据库连接失败",e);
-            throw e;
-        }
     }
 }
