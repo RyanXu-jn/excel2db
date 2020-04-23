@@ -24,7 +24,7 @@ public class OKHttpUtil {
 	private static final Logger logger = LoggerFactory.getLogger(OKHttpUtil.class);
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
 			.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-	private static final String X_WWW_FORM_URLENCODED = "x-www-form-urlencoded";
+	private static final String X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
 	private static final String APPLICATION_JSON = "application/json";
 	private static final String APPLICATION_XML = "application/xml";
 	private static final String TEXT_PLAIN = "text/plain";
