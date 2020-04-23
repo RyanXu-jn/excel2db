@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @auther Ryan Xu
  * @date 2019/10/19 10:33
+ * @updateDate 2020/4/23 添加文件上传请求
  */
 public class OKHttpUtil {
 	private static final Logger logger = LoggerFactory.getLogger(OKHttpUtil.class);
@@ -83,6 +84,7 @@ public class OKHttpUtil {
 				if (!file.isEmpty()) {
 					multipartBuilder.addFormDataPart("file", file.getOriginalFilename(),
 							RequestBody.create(MULTI, file.getBytes()));
+					// .addFormDataPart("output", "json")
 				}
 				if (StringUtils.isNotBlank(data)) {
 					Map<String, String> param = OBJECT_MAPPER.readValue(data, new TypeReference<Map<String, String>>() {});
