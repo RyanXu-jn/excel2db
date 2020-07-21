@@ -70,6 +70,11 @@
             <version>2.1.6</version>
         </dependency>
         <dependency>
+            <groupId>io.tus.java.client</groupId>
+            <artifactId>tus-java-client</artifactId>
+            <version>0.4.2</version>
+        </dependency>
+        <dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
