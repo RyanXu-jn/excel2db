@@ -5,6 +5,6 @@
  2. 封装okhttp
  3. 读取数据库生成excel
 # priview
-   ![image](https://github.com/XuFeiya1014/excel2db/tree/master/img/step-0.png)
-   ![image](https://github.com/XuFeiya1014/excel2db/tree/master/img/step-1.png)
-   ![image](https://github.com/XuFeiya1014/excel2db/tree/master/img/step-2.png)
+   ![image](https://github.com/XuFeiya1014/excel2db/tree/master/img/step-0.jpg)
+   ![image](https://github.com/XuFeiya1014/excel2db/tree/master/img/step-1.jpg)
+   ![image](https://github.com/XuFeiya1014/excel2db/tree/master/img/step-2.jpg)
