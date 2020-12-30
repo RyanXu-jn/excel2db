@@ -17,6 +17,7 @@ public class DBCache {
     private static final Logger logger = LoggerFactory.getLogger(DBCache.class);
     private static LinkedHashMap<String, Db> dbLinkedHashMap;
     private static DBCache instance;
+    private Integer TTL = 60 * 1000;
 
     private DBCache(){
         dbLinkedHashMap = new LinkedHashMap<>();
@@ -49,7 +50,7 @@ public class DBCache {
         Db db = dbLinkedHashMap.get(WebContextUtil.getRemoteAddr());
         if (null != db) {
             if (url.equals(db.getUrl()) && username.equals(db.getUsername())) {
-                db.setTtl(System.currentTimeMillis() + 10*60*1000);
+                db.setTtl(System.currentTimeMillis() + TTL);
                 return;
             }
             db.getConnection().close();
@@ -64,7 +65,7 @@ public class DBCache {
             db.setPassword(password);
             db.setConnection(connection);
             // 10分钟过期时间
-            db.setTtl(System.currentTimeMillis() + 10*60*1000);
+            db.setTtl(System.currentTimeMillis() + TTL);
             dbLinkedHashMap.put(WebContextUtil.getRemoteAddr(), db);
         } catch (SQLException e) {
             logger.error("SQL异常",e);

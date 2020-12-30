@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLSession;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -24,18 +26,21 @@ public class OKHttpUtil {
 	private static final Logger logger = LoggerFactory.getLogger(OKHttpUtil.class);
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
 			.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-	private static final String X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
-	private static final String APPLICATION_JSON = "application/json";
-	private static final String APPLICATION_XML = "application/xml";
-	private static final String TEXT_PLAIN = "text/plain";
-	private static final String MULTIPART_FORM_DATA = "multipart/form-data";
+	public static final String X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
+	public static final String APPLICATION_JSON = "application/json";
+	public static final String APPLICATION_XML = "application/xml";
+	public static final String TEXT_PLAIN = "text/plain";
+	public static final String MULTIPART_FORM_DATA = "multipart/form-data";
 
 	//1.
 	// OkHttpClient client = new OkHttpClient();
 	//2
-	static OkHttpClient client = new OkHttpClient.Builder()
-			.readTimeout(60, TimeUnit.SECONDS)
-			.build();
+	static OkHttpClient client = new OkHttpClient().newBuilder().hostnameVerifier(new HostnameVerifier() {
+			@Override
+			public boolean verify(String s, SSLSession sslSession) {
+				return true;
+			}
+		}).readTimeout(60, TimeUnit.SECONDS).build();
 	//3
 	//OkHttpClient client = new OkHttpClient().newBuilder().build();
 	private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
@@ -44,7 +49,8 @@ public class OKHttpUtil {
 	private static final MediaType MULTI = MediaType.parse("multipart/form-data;charset=utf-8");
 
 	public static String previewDataByUrl(String url, String type, String property,
-										  String data, MultipartFile file) throws Exception{
+                                          String data, MultipartFile file) throws Exception {
+		logger.info("请求url:{}", url);
 		String responseStr = "请求失败，请确认地址和参数信息！";
 		Request request = null;
 		//get请求

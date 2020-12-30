@@ -2,14 +2,15 @@ package com.ryantsui.utils;
 
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.tus.java.client.*;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -17,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 /**
  * go-fastdfs 文件上传工具类.
@@ -28,12 +30,15 @@ public class FileManagerUtil {
     private static final String UPLOAD_URL_KEY = "fastdfs.upload.url";
     private static final String DELETE_URL_KEY = "fastdfs.delete.url";
 
+    private static ThreadLocal<String> tl = new ThreadLocal<>();
+
     private static String SERVER_DOMAIN;
     private static String UPLOAD_URL;
     private static String DELETE_URL;
-    private static String url;
-    private static ObjectMapper objectMapper;
     private static TusClient client = new TusClient();
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+            .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+
     static {
         try {
             InputStream in = FileManagerUtil.class.getClassLoader().getResourceAsStream(CONFIG_FILE);
@@ -43,11 +48,10 @@ public class FileManagerUtil {
             UPLOAD_URL = String.valueOf(properties.get(UPLOAD_URL_KEY));
             DELETE_URL = String.valueOf(properties.get(DELETE_URL_KEY));
             Objects.requireNonNull(in).close();
-            client.setUploadCreationURL(new URL(SERVER_DOMAIN +"/big"+ UPLOAD_URL+"/"));
+            client.setUploadCreationURL(new URL(SERVER_DOMAIN + "/big" + UPLOAD_URL + "/"));
             client.enableResuming(new TusURLMemoryStore());
-            objectMapper = new ObjectMapper();
         } catch (Exception e) {
-            logger.error("加载fastdfs配置文件失败",e);
+            logger.error("加载fastdfs配置文件失败", e);
         }
     }
 
@@ -60,7 +64,7 @@ public class FileManagerUtil {
      * @throws Exception exception
      */
     public static String upload(MultipartFile file, String data) throws Exception {
-        return OKHttpUtil.previewDataByUrl(SERVER_DOMAIN + UPLOAD_URL, "post",MediaType.MULTIPART_FORM_DATA_VALUE, data, file);
+        return OKHttpUtil.previewDataByUrl(SERVER_DOMAIN + UPLOAD_URL, "post", MediaType.MULTIPART_FORM_DATA_VALUE, data, file);
     }
 
     /**
@@ -71,7 +75,7 @@ public class FileManagerUtil {
      * @return string
      * @throws Exception exception
      */
-    public static String tusFileUpload(MultipartFile file, String data) throws Exception{
+    public static String tusFileUpload(MultipartFile file, String data) throws Exception {
         try {
             System.setProperty("http.strictPostRedirect", "true");
             TusUpload upload = new TusUpload();
@@ -79,8 +83,8 @@ public class FileManagerUtil {
             upload.setSize(file.getSize());
             upload.setFingerprint("stream");
             upload.setMetadata(new HashMap<>());
-            upload.getMetadata().put("filename",file.getOriginalFilename());
-            System.out.println("Starting upload...");
+            upload.getMetadata().put("filename", file.getOriginalFilename());
+            logger.info("Starting upload...");
             TusExecutor executor = new TusExecutor() {
                 @Override
                 protected void makeAttempt() throws ProtocolException, IOException {
@@ -89,8 +93,8 @@ public class FileManagerUtil {
                     // a connection to the remote server and doing the uploading.
                     TusUploader uploader = client.resumeOrCreateUpload(upload);
 
-                    // Upload the file in chunks of 1KB sizes.
-                    uploader.setChunkSize(1024);
+                    // Upload the file in chunks of 500KB sizes.
+                    uploader.setChunkSize(512000);
 
                     // Upload the file as long as data is available. Once the
                     // file has been fully uploaded the method will return -1
@@ -102,45 +106,62 @@ public class FileManagerUtil {
                         double progress = (double) bytesUploaded / totalBytes * 100;
 
                         System.out.printf("Upload at %06.2f%%.\n", progress);
-                    } while(uploader.uploadChunk() > -1);
+                    } while (uploader.uploadChunk() > -1);
 
                     // Allow the HTTP connection to be closed and cleaned up
                     uploader.finish();
-
-                    System.out.println("Upload finished.");
-                    System.out.format("Upload available at: %s", uploader.getUploadURL().toString());
-                    url = uploader.getUploadURL().toString();
+                    while (true) {
+                        if (StringUtils.isNotBlank(uploader.getUploadURL().toString())) {
+                            logger.info("Upload finished.");
+                            tl.set(uploader.getUploadURL().toString());
+                            logger.info("Upload available at:{}", tl.get());
+                            break;
+                        }
+                    }
                 }
             };
             executor.makeAttempts();
-            String jsonStr = OKHttpUtil.previewDataByUrl(SERVER_DOMAIN + UPLOAD_URL+"?output=json&md5="+ url.substring(url.lastIndexOf("/")+1), "get", MediaType.MULTIPART_FORM_DATA_VALUE, data, null);
-            Map<String, String> json = objectMapper.readValue(jsonStr, new TypeReference<Map<String, String>>(){});
+            String realUrl = SERVER_DOMAIN + UPLOAD_URL + "?output=json&md5=" + tl.get().substring(tl.get().lastIndexOf("/") + 1);
+            logger.info("file real url：{}", realUrl);
+            Map<String, Object> json;
+            while (true) {
+                String jsonStr = OKHttpUtil.previewDataByUrl(realUrl, "get", MediaType.MULTIPART_FORM_DATA_VALUE, data, null);
+                json = objectMapper.readValue(jsonStr, new TypeReference<Map<String, Object>>() {});
+                if (StringUtils.isNotBlank(String.valueOf(json.get("url")))) {
+                    break;
+                }
+                TimeUnit.SECONDS.sleep(1);
+            }
             logger.info("最终路径:{}", json.get("url"));
-            return json.get("url");
-        } catch(Exception e) {
+            return String.valueOf(json.get("url"));
+        } catch (Exception e) {
             e.printStackTrace();
             return "";
         }
 
     }
+
+
     /**
      * 删除文件.
+     *
      * @param path path
      * @throws Exception exception
      */
     public static void delete(String path) throws Exception {
         int groupIndex = path.indexOf("group");
         String filePath = path.substring(groupIndex - 1);
-        OKHttpUtil.previewDataByUrl(SERVER_DOMAIN + DELETE_URL,"post", MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-                "{\"path\":\"" + filePath + "\"}",null);
+        OKHttpUtil.previewDataByUrl(SERVER_DOMAIN + DELETE_URL, "post", MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+                "{\"path\":\"" + filePath + "\"}", null);
     }
-    public static void main(String[] args) {
-        try {
-            FileManagerUtil.delete("http://78.120.16.145:8088/group1/default/20200423/18/13/5/200423181334745.jpg");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+//    public static void main(String[] args) {
+//        try {
+//            FileManagerUtil.delete("http://49.233.208.246:7080/group1/default/20200423/18/13/5/200423181334745.jpg");
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
+
    /* public static void main(String[] args) {
         try {
             // When Java's HTTP client follows a redirect for a POST request, it will change the

@@ -38,7 +38,7 @@ public class URLController {
         //String result = HttpClient.previewDataByUrl(param.get("requestUrl"),param.get("requestType"),
          //       param.get("requestProperty"),param.get("requestData"));
 		return OKHttpUtil.previewDataByUrl(param.get("requestUrl"),param.get("requestType"),
-				      param.get("requestProperty"),param.get("requestData"));
+				      param.get("requestProperty"),param.get("requestData"),null);
     }
 
     /**

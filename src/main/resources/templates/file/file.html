@@ -36,7 +36,7 @@
                             <label class="layui-form-label">数据库系统</label>
                             <div class="layui-input-block">
                                 <select name="database-system" lay-verify="required" lay-filter="dbname">
-                                    <option value="com.mysql.jdbc.Driver" selected>MySql</option>
+                                    <option value="com.mysql.cj.jdbc.Driver" selected>MySql</option>
                                     <option value="oracle.jdbc.driver.OracleDriver">Oracle</option>
                                 </select>
                             </div>
@@ -71,7 +71,7 @@
             </div>
             <div id="step_2">
                 <div class="layui-col-md5 layui-col-md-offset4">
-                    <form class="layui-form" id="cols-form" lay-filter="colsFilter">
+                    <form class="layui-form" id="cols-form" lay-filter="colsFilter" style="height: 430px;">
                     </form>
                 </div>
             </div>
@@ -406,7 +406,7 @@
         let temp;
         for (var i = columnData.length - 1; i > -1; i--) {
             temp = columnData[i];
-            if (temp.join(",") === temp.reverse().join(",")) {
+            if (temp.join(",") === new Array(temp.length).join(",")) {
                 columnData.splice(i, 1);
             }
         }
