@@ -38,6 +38,7 @@
                                 <select name="database-system" lay-verify="required" lay-filter="dbname">
                                     <option value="com.mysql.cj.jdbc.Driver" selected>MySql</option>
                                     <option value="oracle.jdbc.driver.OracleDriver">Oracle</option>
+                                    <option value="org.postgresql.Driver">Postgre</option>
                                 </select>
                             </div>
                         </div>
@@ -158,6 +159,8 @@
                 $("#database-url").val("jdbc:mysql://127.0.0.1:3306/databse");
             } else if (value.indexOf("oracle") >= 0) {
                 $("#database-url").val("jdbc:oracle:thin:@127.0.0.1:1521:orcl");
+            } else if (value.indexOf("postgre") > 0) {
+                $("#database-url").val("jdbc:postgresql://ip:port/dbname");
             }
         });
         layform.on('radio(tableRadio)', function(data){
@@ -385,6 +388,9 @@
                         } else {
                             toastr.error(data.meta.message);
                         }
+                    },
+                    error: function (err) {
+                        toastr.warning(JSON.parse(err.responseText).meta.message);
                     }
                 });
             } else {

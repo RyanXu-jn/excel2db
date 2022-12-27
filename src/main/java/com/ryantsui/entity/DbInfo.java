@@ -1,14 +1,25 @@
 package com.ryantsui.entity;
 
-import java.sql.Connection;
+import org.jooq.SQLDialect;
 
-public class Db {
+public class DbInfo {
+
+    public DbInfo() {
+
+    }
+
+    public DbInfo(String driver, String url, String username, String password) {
+        this.driver = driver;
+        this.url = url;
+        this.username = username;
+        this.password = password;
+    }
+
     private String driver;
     private String url;
     private String username;
     private String password;
-    private Connection connection;
-    private long ttl;
+    private SQLDialect sqlDialect;
 
     public String getDriver() {
         return driver;
@@ -42,30 +53,22 @@ public class Db {
         this.password = password;
     }
 
-    public Connection getConnection() {
-        return connection;
+    public SQLDialect getSqlDialect() {
+        return sqlDialect;
     }
 
-    public void setConnection(Connection connection) {
-        this.connection = connection;
-    }
-
-    public long getTtl() {
-        return ttl;
-    }
-
-    public void setTtl(long ttl) {
-        this.ttl = ttl;
+    public void setSqlDialect(SQLDialect sqlDialect) {
+        this.sqlDialect = sqlDialect;
     }
 
     @Override
     public String toString() {
-        return "Db{" +
+        return "DbInfo{" +
                 "driver='" + driver + '\'' +
                 ", url='" + url + '\'' +
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
-                ", connection=" + connection +
+                ", sqlDialect=" + sqlDialect +
                 '}';
     }
 }

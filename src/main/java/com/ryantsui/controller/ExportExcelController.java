@@ -4,12 +4,10 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ryantsui.cache.DBCache;
 import com.ryantsui.entity.JsonMessage;
-import com.ryantsui.service.DBService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.ryantsui.utils.DbUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.jooq.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,16 +25,11 @@ import java.util.Map;
  */
 @Controller
 @RequestMapping("excel")
+@Slf4j
 public class ExportExcelController {
-    private static final Logger logger = LoggerFactory.getLogger(Excel2DBController.class);
     private static final ObjectMapper objectMapper = new ObjectMapper()
             .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
     private static final int eachPageRow = 5000;
-    private final DBService dbService;
-    @Autowired
-    public ExportExcelController(DBService dbService) {
-        this.dbService = dbService;
-    }
 
 
 
@@ -61,7 +54,7 @@ public class ExportExcelController {
     @PostMapping("downloadFailedUsingJson")
     public void downloadFailedUsingJson(HttpServletResponse response, @RequestBody Map<String, String> param)
             throws IOException {
-        Connection connection = DBCache.getInstance().getConnection();
+        Connection connection = DbUtil.getConnection();
         StringBuilder stringBuilder = new StringBuilder();
         int queryRows = 0;
         if ("custom".equalsIgnoreCase(param.get("type"))) {
@@ -73,28 +66,42 @@ public class ExportExcelController {
                 queryRows = Integer.parseInt(param.get("dataRows"));
             }
         }
-        String originSql = stringBuilder.toString();
+        String originSql = "(".concat(stringBuilder.toString()).concat(") it");
+        DSLContext context = DbUtil.getDSLContext();
+        SelectWhereStep selectWhereStep = context.selectFrom(originSql);
         try {
             response.setContentType("application/vnd.ms-excel");
             response.setCharacterEncoding("utf-8");
-            String fileName = URLEncoder.encode("下载数据", "UTF-8");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
+            // String fileName = URLEncoder.encode("下载数据", "UTF-8");
+            response.setHeader("Content-disposition", "attachment;filename=".concat(param.get("tableName")).concat(".xlsx"));
 
-            Map<String, List<List<String>>> data;
             List<List<String>> headList = new ArrayList<>();
-            List<List<String>> dataList;
             int totalRows = queryRows;
             if (0 == queryRows) {
-                totalRows = dbService.countTotalRows(originSql, connection);
+                Result<Record1<Integer>> result = context.selectCount().from(originSql).fetch();
+                totalRows = (int) (result.get(0)).get(0);
             }
-            dataList = new ArrayList<>(totalRows*2);
-            for (int page = 1; page <= (totalRows/eachPageRow + 1); page++) {
-                data = dbService.list(getPageSql(originSql, page, totalRows), connection);
-                dataList.addAll(data.get("list"));
-                logger.info("共计 {} 行, 已完成 {} 行", totalRows, dataList.size());
-                if (1 == page) {
-                    headList = data.get("head");
+            List<List<String>> dataList = new ArrayList<>(totalRows*2);
+            Result<Record> queryResult;
+            for (int page = 0; page < (totalRows/eachPageRow + 1); page++) {
+                queryResult = selectWhereStep.limit(eachPageRow).offset(page * eachPageRow).fetch();
+                if (0 == page) {
+                    Field[] fields = queryResult.fields();
+                    List<String> columnList;
+                    for (int i = 0; i < fields.length; i++) {
+                        columnList = new ArrayList<>(5);
+                        columnList.add(fields[i].getName());
+                        headList.add(columnList);
+                    }
                 }
+                for (Record record: queryResult) {
+                    List<String> rowList = new ArrayList<>(queryResult.fields().length * 2);
+                    for (List<String> head: headList) {
+                        rowList.add(String.valueOf(record.getValue(head.get(0))));
+                    }
+                    dataList.add(rowList);
+                }
+                log.info("共计 {} 行, 已完成 {} 行", totalRows, dataList.size());
             }
             EasyExcel.write(response.getOutputStream()).head(headList)
                   .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
@@ -124,7 +131,7 @@ public class ExportExcelController {
             //2. EasyExcel.write(response.getOutputStream(), DownloadData.class).autoCloseStream(Boolean.FALSE).sheet("模板")
                     //.doWrite(data());
         } catch (Exception e) {
-            logger.error("下载失败：{}", e.getMessage());
+            log.error("下载失败：", e);
             // 重置response
             response.reset();
             response.setContentType("application/json");
@@ -132,36 +139,5 @@ public class ExportExcelController {
             response.getWriter().println(objectMapper.writeValueAsString(
                     new JsonMessage().failure("下载失败:" + e.getMessage())));
         }
-    }
-
-    /**
-     * 拼装分页sql
-     * @param sql sql
-     * @param page 页码
-     * @return string
-     */
-    private String getPageSql(String sql, int page, int total) {
-        StringBuilder stringBuilder = new StringBuilder();
-        String driver = DBCache.getInstance().getDbEntity().getDriver();
-        int startRowNum = (page -1) * eachPageRow;
-        int endRowNum = page * eachPageRow;
-        if (driver.contains("mysql")) {
-            stringBuilder.append(sql).append(" limit ").append(startRowNum).append(",");
-            if (endRowNum > total) {
-                stringBuilder.append(total - startRowNum);
-            } else {
-                stringBuilder.append(eachPageRow);
-            }
-        } else if (driver.contains("oracle")) {
-            sql = sql.replace("select ", "select ROWNUM r,");
-            stringBuilder.append(" SELECT * FROM (").append(sql);
-            if (!sql.contains("where")) {
-                stringBuilder.append(" where ");
-            }
-            // total+1 避免最后一条数据查询不出来问题
-            stringBuilder.append(" rownum < ").append(Math.min(endRowNum, total + 1));
-            stringBuilder.append(") t where t.r >=").append(startRowNum);
-        }
-        return stringBuilder.toString();
     }
 }

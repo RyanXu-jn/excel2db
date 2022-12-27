@@ -5,7 +5,7 @@
 
 	<groupId>com.ryantsui</groupId>
 	<artifactId>excel2db</artifactId>
-	<version>2.2</version>
+	<version>3.0</version>
 	<packaging>jar</packaging>
 
 	<name>excel2db</name>
@@ -21,7 +21,12 @@
 	<properties>
         <mysql.version>[8.0.16,)</mysql.version>
         <oracle.version>19.7.0.0</oracle.version>
+        <postgresql.version>42.2.5</postgresql.version>
         <common-lang3.version>3.7</common-lang3.version>
+        <easyexcel.version>2.1.6</easyexcel.version>
+        <hikaricp.version>3.2.0</hikaricp.version>
+        <jooq.version>3.12.5-RELEASE</jooq.version>
+        <druid.version>1.2.15</druid.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
@@ -33,10 +38,6 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
-        </dependency>
-        <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>${mysql.version}</version>
@@ -46,7 +47,11 @@
             <artifactId>ojdbc8</artifactId>
             <version>${oracle.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
@@ -56,38 +61,25 @@
             <groupId>com.ibeetl</groupId>
             <artifactId>beetl-framework-starter</artifactId>
             <version>1.2.6.RELEASE</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.ibeetl</groupId>
-                    <artifactId>beetlsql</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>3.11.0</version>
         </dependency>
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>easyexcel</artifactId>
-            <version>2.1.6</version>
+            <version>${easyexcel.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.tus.java.client</groupId>
-            <artifactId>tus-java-client</artifactId>
-            <version>0.4.2</version>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq</artifactId>
+            <version>${jooq.version}</version>
         </dependency>
         <dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>${druid.version}</version>
+        </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <scope>provided</scope>
-            <optional>true</optional>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
         </dependency>
     </dependencies>
 

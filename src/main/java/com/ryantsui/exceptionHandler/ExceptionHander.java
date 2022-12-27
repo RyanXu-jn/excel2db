@@ -20,7 +20,7 @@ public class ExceptionHander {
     @ResponseBody
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public JsonMessage handleException(Exception e) {
-        logger.error(e.getMessage());
+        logger.error("系统发生错误:", e);
         return new JsonMessage().failure(e.getMessage());
     }
 }

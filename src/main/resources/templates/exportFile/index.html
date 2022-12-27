@@ -24,8 +24,9 @@
                             <label class="layui-form-label">数据库系统</label>
                             <div class="layui-input-block">
                                 <select name="database-system" lay-verify="required" lay-filter="dbname">
-                                    <option value="com.mysql.jdbc.Driver" selected>MySql</option>
+                                    <option value="com.mysql.cj.jdbc.Driver" selected>MySql</option>
                                     <option value="oracle.jdbc.driver.OracleDriver">Oracle</option>
+                                    <option value="org.postgresql.Driver">Postgre</option>
                                 </select>
                             </div>
                         </div>
@@ -156,6 +157,8 @@
                 $("#database-url").val("jdbc:mysql://127.0.0.1:3306/database");
             } else if (value.indexOf("oracle") >= 0) {
                 $("#database-url").val("jdbc:oracle:thin:@127.0.0.1:1521:orcl");
+            } else if (value.indexOf("postgre") > 0) {
+                $("#database-url").val("jdbc:postgresql://ip:port/dbname");
             }
         });
         layform.on("radio(exportType-filter)", function (data) {

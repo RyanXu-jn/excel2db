@@ -1,29 +1,22 @@
 package com.ryantsui.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ryantsui.cache.DBCache;
-import com.ryantsui.config.DBConfig;
-import com.ryantsui.entity.Db;
+import com.ryantsui.utils.DbUtil;
 import com.ryantsui.entity.JsonMessage;
-import com.ryantsui.service.DBService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
+import org.jooq.*;
+import org.jooq.impl.DSL;
+import org.jooq.impl.DefaultDataType;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.util.StopWatch;
+import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.sql.*;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 控制类.
@@ -31,15 +24,12 @@ import java.util.Map;
  */
 @Controller
 @RequestMapping("file")
+@Slf4j
 public class Excel2DBController {
-    private static final Logger logger = LoggerFactory.getLogger(Excel2DBController.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper()
-            .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-    private final DBService DBService;
+    private ObjectMapper objectMapper;
 
-    @Autowired
-    public Excel2DBController(DBService DBService) {
-        this.DBService = DBService;
+    public Excel2DBController(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -49,19 +39,25 @@ public class Excel2DBController {
      * @param username 用户名
      * @param password 密码
      * @return JsonMessage
-     * @throws ClassNotFoundException 异常
      * @throws SQLException 异常
      */
-    @RequestMapping(value = "/listDBTables",method = RequestMethod.POST,produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @PostMapping(value = "/listDBTables")
     @ResponseBody
     public JsonMessage connectDataBase(@RequestParam(value = "driver") String driver,
                                        @RequestParam(value = "url") String url,
                                        @RequestParam(value = "username") String username,
                                        @RequestParam(value = "password") String password)
-            throws ClassNotFoundException,SQLException {
-        DBCache.getInstance().initConnection(driver, url, username, password);
-        List<String> tables = DBService.listAllTables(DBCache.getInstance().getConnection());
-        return new JsonMessage().success(tables);
+            throws SQLException {
+        DbUtil.initConnection(driver, url, username, password);
+        List<String> tableList = new ArrayList<>();
+        Connection conn = DbUtil.getConnection();
+        DatabaseMetaData databaseMetaData = conn.getMetaData();
+        ResultSet rs = databaseMetaData.getTables(conn.getCatalog(), conn.getSchema(),
+                "%", new String[]{"TABLE"});
+        while (rs.next()) {
+            tableList.add(rs.getString("TABLE_NAME"));
+        }
+        return new JsonMessage().success(tableList);
     }
 
 
@@ -69,24 +65,20 @@ public class Excel2DBController {
      * 获取数据库某个表的所有字段.
      * @param tableName 表名
      * @return JsonMessage
-     * @throws ClassNotFoundException 异常
-     * @throws SQLException 异常
      */
-    @RequestMapping(value="listTableColumns",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @GetMapping(value="listTableColumns")
     @ResponseBody
-    public JsonMessage listTableColumns(@RequestParam(value="tableName") String tableName)
-            throws ClassNotFoundException,SQLException{
+    public JsonMessage listTableColumns(@RequestParam(value="tableName") String tableName) {
         if (!StringUtils.isNotBlank(tableName)) {
             return new JsonMessage().failure("表名不能为空");
         }
-        String tableSql = null;
-        String driver = DBCache.getInstance().getDbEntity().getDriver();
-        if (driver.contains("mysql")) {
-            tableSql = "select * from " + tableName +" limit 10";
-        } else if (driver.contains("oracle")) {
-            tableSql = "select * from " + tableName + " where rownum < 10";
+        DSLContext dslContext = DbUtil.getDSLContext();
+        Result<Record> resultRecord = dslContext.selectFrom(tableName).where("1=2").fetch();
+        Field[] fields = resultRecord.fields();
+        List<String> list = new ArrayList<>(fields.length * 2);
+        for (int i = 0; i < fields.length; i++) {
+            list.add(fields[i].getName());
         }
-        List<String> list = DBService.listTableAllColumns(tableSql, DBCache.getInstance().getConnection());
         return new JsonMessage().success(list);
     }
 
@@ -95,35 +87,20 @@ public class Excel2DBController {
      * @param tableName 表名
      * @param data 字段数据
      * @return JsonMessage
-     * @throws ClassNotFoundException 异常
-     * @throws SQLException 异常
      */
-    @RequestMapping(value="createNewTable",method = RequestMethod.POST,produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @PostMapping(value="createNewTable")
     @ResponseBody
-    public JsonMessage createNewTable(String tableName,String data)
-            throws ClassNotFoundException, SQLException, IOException {
-        List<Map<String,String>> DO = objectMapper.readValue(data,new TypeReference<List<Map<String,String>>>(){});
-        StringBuilder stringBuffer = new StringBuilder();
-        stringBuffer.append("create table ").append(tableName).append(" (");
-        Map<String,String> tempMap = null;
-        for (int i = 0; i < DO.size(); i++) {
-            tempMap = DO.get(i);
-            stringBuffer.append(tempMap.get("name")).append(" ").append(tempMap.get("type"));
-            if ("VARCHAR".equals(tempMap.get("type")) || "VARCHAR2".equals(tempMap.get("type"))
-                    || "CHAR".equals(tempMap.get("type")) ){
-                if (StringUtils.isNotBlank(tempMap.get("length"))) {
-                    stringBuffer.append("(").append(tempMap.get("length")).append(")");
-                }
-            }
-            if (i != DO.size() - 1) {
-                stringBuffer.append(",");
-            }
+    public JsonMessage createNewTable(String tableName,String data) throws IOException {
+        DSLContext context = DbUtil.getDSLContext();
+        List<Map<String,String>> columnList = objectMapper.readValue(data,new TypeReference<List<Map<String,String>>>(){});
+        Field<?>[] fields = new Field[columnList.size()];
+        Map<String,String> tempMap;
+        for (int i = 0; i < columnList.size(); i++) {
+            tempMap = columnList.get(i);
+            fields[i] = DSL.field(tempMap.get("name"),
+                    DefaultDataType.getDataType(DbUtil.getSQLDialet(), tempMap.get("type")));
         }
-        stringBuffer.append(")");
-        if (DBCache.getInstance().getDbEntity().getDriver().contains("mysql")) {
-            stringBuffer.append(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-        }
-        DBService.createNewTable(stringBuffer.toString(), DBCache.getInstance().getConnection());
+        context.createTable(tableName).columns(fields).execute();
         return new JsonMessage().success();
     }
 
@@ -136,29 +113,35 @@ public class Excel2DBController {
      * @throws ClassNotFoundException 异常
      * @throws SQLException 异常
      */
-    @RequestMapping(value = "saveData",produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @RequestMapping(value = "saveData")
     @ResponseBody
     public JsonMessage saveData(String tableName,String columns,String data,String columnTypes) throws Exception {
         List<List<String>> dataList = objectMapper.readValue(data, new TypeReference< List<List<String>>>() {});
-        List<Map<String,String>> columnTypeList = objectMapper.readValue(columnTypes,
-                new TypeReference<List<Map<String,String>>>() {});
         String[] columnsArr = columns.split(",");
         if (columnsArr.length != dataList.get(0).size()) {
             return new JsonMessage().failure("列数不匹配！");
         }
+        DSLContext context = DbUtil.getDSLContext();
+        Field<?>[] fields = context.selectFrom(tableName).fetch().fields();
+        List<Field<?>> comparedFields = new ArrayList<>(fields.length);
+        for (int i = 0; i < fields.length; i++) {
+            if (columns.toLowerCase().indexOf(fields[i].getName().toLowerCase()) > -1) {
+                comparedFields.add(fields[i]);
+            }
+        }
+        Field<?>[] tmpFields = new Field[comparedFields.size()];
+        comparedFields.toArray(tmpFields);
         //50条数据进行一次提交
         int num = 50;
         if (dataList.size() <= num) {
-            DBService.saveDataIns(tableName,columns,dataList,columnTypeList,
-                    DBCache.getInstance().getConnection());
+            saveDataIns(context, tableName, tmpFields, dataList);
         } else {
             int fromIndex = 0,toIndex = num;
             while(true) {
                 if (toIndex > dataList.size()) {
                     toIndex = dataList.size();
                 }
-                DBService.saveDataIns(tableName,columns,dataList.subList(fromIndex,toIndex),
-                        columnTypeList, DBCache.getInstance().getConnection());
+                saveDataIns(context, tableName, tmpFields, dataList.subList(fromIndex,toIndex));
                 if (toIndex == dataList.size()) {
                     break;
                 }
@@ -167,5 +150,18 @@ public class Excel2DBController {
             }
         }
         return new JsonMessage().success();
+    }
+    private void saveDataIns(DSLContext context, String tableName,Field<?>[] tmpFields,List<List<String>> dataList) {
+        BatchBindStep step = context.batch(context.insertInto(DSL.table(tableName), tmpFields).values(
+                Arrays.stream(tmpFields).map(e -> "?").collect(Collectors.toList())
+        ));
+        dataList.forEach(e -> {
+            step.bind(e.toArray());
+        });
+        StopWatch stopWatch = new StopWatch("批量插入");
+        stopWatch.start();
+        step.execute();
+        stopWatch.stop();
+        log.info("数据总量:{},{}", dataList.size(), stopWatch.prettyPrint());
     }
 }

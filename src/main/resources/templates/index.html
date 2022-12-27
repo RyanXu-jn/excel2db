@@ -11,7 +11,6 @@
         <div class="index-logo"><img src="${ctxPath}/static/images/logo.png" style="width: 162px;height: 60px;"/></div>
         <ul class="layui-nav" lay-filter="filter">
             <li class="layui-nav-item layui-this"><a href="javascript:;" tab="readFile">读文件</a></li>
-            <li class="layui-nav-item"><a href="javascript:;" tab="readURL">读URL</a></li>
             <li class="layui-nav-item"><a href="javascript:;" tab="exportExcel">导出Excel</a></li>
         </ul>
     </div>
@@ -33,9 +32,7 @@
             //console.log(data.index); //得到当前Tab的所在下标
             //console.log(data.elem); //得到当前的Tab大容器
             let url = "";
-            if ("readURL" === $(this).attr("tab")) {
-                url = ctxPath + "/url/url";
-            } else if ("readFile" === $(this).attr("tab")) {
+            if ("readFile" === $(this).attr("tab")) {
                 url = ctxPath + "/file/file";
             } else if ("exportExcel" === $(this).attr("tab")) {
                 url = ctxPath + "/exportFile/index";
