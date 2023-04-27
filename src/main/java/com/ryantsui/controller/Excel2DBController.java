@@ -131,8 +131,8 @@ public class Excel2DBController {
         }
         Field<?>[] tmpFields = new Field[comparedFields.size()];
         comparedFields.toArray(tmpFields);
-        //50条数据进行一次提交
-        int num = 50;
+        //200条数据进行一次提交
+        int num = 200;
         if (dataList.size() <= num) {
             saveDataIns(context, tableName, tmpFields, dataList);
         } else {
