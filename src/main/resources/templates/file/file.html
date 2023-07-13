@@ -46,7 +46,7 @@
                             <label for="database-url" class="layui-form-label">数据库URL</label>
                             <div class="layui-input-block">
                                 <input type="text" class="layui-input" id="database-url" placeholder="url"
-                                       value="jdbc:mysql://127.0.0.1:3306/databse"/>
+                                       value="jdbc:mysql://127.0.0.1:3306/databse?serverTimezone=GMT%2B8&useSSL=false&characterEncoding=utf8&allowMutiQueries=true"/>
                             </div>
                         </div>
                         <div class="layui-form-item">
@@ -72,7 +72,7 @@
             </div>
             <div id="step_2">
                 <div class="layui-col-md5 layui-col-md-offset4">
-                    <form class="layui-form" id="cols-form" lay-filter="colsFilter" style="height: 430px;">
+                    <form class="layui-form" id="cols-form" lay-filter="colsFilter" style="height: 430px;overflow: auto;">
                     </form>
                 </div>
             </div>
