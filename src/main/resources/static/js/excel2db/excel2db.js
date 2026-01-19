@@ -101,9 +101,9 @@ function get_columns_content(wb,type) {
         for (C = range.s.c; C <= range.e.c; ++C) {
             val = sheet[XLSX.utils.encode_cell({ c: C, r: R })];
             if (!val){
-                column[C] = "";
+                column[C - range.s.c] = "";
             } else {
-                column[C] = type.toLowerCase() === 'xls' || type.toLowerCase() === 'xlsx' ? XLSX.utils.format_cell(val) : val.v;
+                column[C - range.s.c] = type.toLowerCase() === 'xls' || type.toLowerCase() === 'xlsx' ? XLSX.utils.format_cell(val) : val.v;
             }
         }
         columnContents.push(column);
